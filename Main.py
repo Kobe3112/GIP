@@ -256,8 +256,8 @@ m_dot_backbone = debiet_backbone * dichtheid_fluid_backbone / 3600  # kg/s
 ### LEIDINGEN ONTWERPDATA
 
 ### LEIDINGEN LENGTES
-L_1_2 = 20 # m
-L_2_3 = 20 # m
+L_1_2 = 0 # m
+L_2_3 = 0 # m
 
 ### WARMTEPOMPEN DEBIETEN
 X_WP1 = 0.2
