@@ -1,7 +1,7 @@
 import math
-import streamlit as st
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+#import streamlit as st
+#import matplotlib.pyplot as plt
+#import matplotlib.patches as patches
 import random
 
 
@@ -38,15 +38,30 @@ def T_daling_warmtepomp(T_cold_in):
 def bereken_COP(T_cold_in, T_hot_out, model):
     if model == "fixed":
         return (4.5)
-def T_daling_leiding(begin_Temperatuur):
-    if begin_Temperatuur>20:
-        return 1
-    elif begin_Temperatuur>15:
-        return 0.5 + random.uniform(-0.01,0.01)
-    elif begin_Temperatuur>10:
-        return 0
-    else:
-        return -0.5
+def T_daling_leiding(begin_Temperatuur,lengte,massadebiet):
+    # neem constante snelheid aan doorheen de buizen
+    pipe_diameter = math.sqrt((4*massadebiet)/(math.pi*dichtheid_fluid_backbone*flowspeed_backbone))
+
+    Pr = (mu_fluid_backbone*Cp_fluid_backbone)/k_fluid_backbone
+    Re = (flowspeed_backbone*pipe_diameter*dichtheid_fluid_backbone)/mu_fluid_backbone
+
+    # Dittus-Boelter
+    #n = 0.3
+    #Nu = 0.023 * Re ** 0.8 * Pr ** n
+
+    # constante wandtemperatuur
+    Nu = 3.66
+
+    h_conv = (Nu*k_fluid_backbone)/pipe_diameter
+
+    R_conv = (math.pi*pipe_diameter)/h_conv
+    R_steel = math.log((0.5*pipe_diameter+pipe_thickness)/(0.5*pipe_diameter)) / (2*math.pi*k_steel)
+    R_tot = R_conv + R_steel
+
+    q = (begin_Temperatuur - T_ground) / R_tot
+
+    return (lengte*q)/(Cp_fluid_backbone*massadebiet)
+
 def T_daling_totaal(T_1):
     global T_I1
     global T_I2
@@ -59,33 +74,33 @@ def T_daling_totaal(T_1):
     global T_I9
 
 
-    T_1_2 = T_daling_leiding(T_1)
+    T_1_2 = T_daling_leiding(T_1,L_1_2,m_1_2)
     T_2 = T_1 - T_1_2
 
-    T_2_3 = T_daling_leiding(T_2)
+    T_2_3 = T_daling_leiding(T_2,L_2_3,m_2_3)
     T_3 = T_2 - T_2_3
 
-    T_3_I1 = T_daling_leiding(T_3)
+    T_3_I1 = T_daling_leiding(T_3,L_3_I1,m_WP_1)
     T_I1 = T_3 - T_3_I1
 
     T_I1_O1 = T_daling_warmtepomp(T_I1)
     T_O1 = T_I1 - T_I1_O1
 
-    T_O1_14 = T_daling_leiding(T_O1)
+    T_O1_14 = T_daling_leiding(T_O1,L_O1_14,m_WP_1)
     T_14_A = T_O1 - T_O1_14
 
-    T_3_I2 = T_daling_leiding(T_3)
+    T_3_I2 = T_daling_leiding(T_3,L_3_I2,m_WP_2)
     T_I2 = T_3 - T_3_I2
 
     T_I2_O2 = T_daling_warmtepomp(T_I2)
     T_O2 = T_I2 - T_I2_O2
 
-    T_O2_14 = T_daling_leiding(T_O2)
+    T_O2_14 = T_daling_leiding(T_O2,L_O2_14,m_WP_2)
     T_14_B = T_O2 - T_O2_14
 
     T_14 = meng(T_14_A,m_WP_1,T_14_B,m_WP_2)
 
-    T_14_T_15 = T_daling_leiding(T_14)
+    T_14_T_15 = T_daling_leiding(T_14,L_14_15,m_14_15)
     T_15_B = T_14 - T_14_T_15
 
     #om het nu te doen werken ##############
@@ -96,7 +111,7 @@ def T_daling_totaal(T_1):
 
     T_15 = meng(T_15_A,m_2_15,T_15_B,m_14_15)
 
-    T_15_16 = T_daling_leiding(T_15)
+    T_15_16 = T_daling_leiding(T_15,L_15_16,m_15_16)
     T_16 = T_15 - T_15_16
 
     solution['T2'] = T_2
@@ -244,20 +259,32 @@ T_hot_out_WP_2 = 40 #°C
 ### FLUIDS
 T_imec = 21.8
 debiet_imec = 60 #m3/h
-debiet_backbone = 40 #m3/h
+debiet_backbone = 70 #m3/h
 dichtheid_fluid_imec = 997 #kg/m3
 dichtheid_fluid_backbone = 997 #kg/m3
 Cp_fluid_imec = 4180  # J/kg·K
 Cp_fluid_backbone = 4180  # J/kg·K
+k_fluid_backbone = 0.598  # W/(m*k)
+mu_fluid_backbone = 0.001  # N*s/m2
 
 m_dot_imec = debiet_imec * dichtheid_fluid_imec / 3600  # kg/s
 m_dot_backbone = debiet_backbone * dichtheid_fluid_backbone / 3600  # kg/s
 
 ### LEIDINGEN ONTWERPDATA
+pipe_thickness = 0.01  # m
+k_steel = 45  # W/(m*K)
+T_ground = 10  # °C
+flowspeed_backbone = 2  # m/s
 
 ### LEIDINGEN LENGTES
-L_1_2 = 0 # m
-L_2_3 = 0 # m
+L_1_2 = 115  # m
+L_2_3 = 30  # m
+L_3_I1 = 20  # m
+L_O1_14 = L_3_I1  # m
+L_3_I2 = 75  # m
+L_O2_14 = L_3_I2  # m
+L_14_15 = L_2_3  # m
+L_15_16 = L_1_2  # m
 
 ### WARMTEPOMPEN DEBIETEN
 X_WP1 = 0.2
@@ -317,5 +344,4 @@ letter_grootte = 60  # Tekstgrootte
 #T_A = st.number_input("Temperatuur IMEC",value=21.8,step=0.1)
 #st.title("Warmtenet Visualisatie")
 #st.pyplot(teken_schema(solution))
-
 
