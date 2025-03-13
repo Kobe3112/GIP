@@ -37,7 +37,7 @@ def T_daling_warmtepomp(T_cold_in):
     return T_cold_in - T_cold_out
 def bereken_COP(T_cold_in, T_hot_out, model):
     if model == "fixed":
-        return (4.5)
+        return (COP_fixed)
 def T_daling_leiding(begin_Temperatuur):
     if begin_Temperatuur>20:
         return 1
@@ -89,7 +89,7 @@ def T_daling_totaal(T_1):
     T_15_B = T_14 - T_14_T_15
 
     #om het nu te doen werken ##############
-    T_2_15 = 10
+    T_2_15 = 15
     T_15_A = T_2 - T_2_15
     #####################
 
@@ -178,37 +178,94 @@ def itereer_over_volledig_netwerk():
     solution['T naar Dijle'] = T_naar_Dijle
 
 def teken_schema(solution):
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(30, 10))
     ax.set_aspect('equal')  # Zorgt ervoor dat cirkels geen ovalen worden
     x_min, x_max = ax.get_xlim()
-    schaal_factor = (x_max - x_min) / 10  # Hoe groter de figuur, hoe groter de tekst
+
 
     # 🏭 **Leidingen**
     leidingen = [
-        ((1, 3), (4, 3)),  # Leiding naar warmtepomp
-        ((5, 3), (8, 3)),  # Leiding na warmtepomp
+        # naar WW
+        ((30, 2.9), (28, 2.9),"lightblue"),
+        ((30, 3.1), (28, 3.1),"orange"),
+        # vertrek uit WW
+        ((27, 3.1), (25, 3.1),"red"),
+        ((27, 2.9), (25, 2.9),"blue"),
+        # naar links
+        ((25, 3.1), (23, 3.1),"red"),
+        ((25, 2.9), (23, 2.9),"blue"),
+        # naar WP1
+        ((23.1, 3.1), (23.1, 4),"red"),
+        ((22.9, 2.9), (22.9, 4),"blue"),
+        # naar links
+        ((23, 3.1), (20.9, 3.1),"red"),
+        ((23, 2.9), (21.1, 2.9),"blue"),
+        # naar WP2
+        ((21.1, 2.9), (21.1, 2),"blue"),
+        ((20.9, 3.1), (20.9, 2),"red"),
     ]
 
-    for (start, eind) in leidingen:
-        ax.plot([start[0], eind[0]], [start[1], eind[1]], color="black", linewidth=leiding_dikte)
+    for (start, eind, color) in leidingen:
+        ax.plot([start[0], eind[0]], [start[1], eind[1]], color=color, linewidth=leiding_dikte)
+
+    # ⚙️ **Warmtewisselaar**
+    ww = patches.Circle((27.5, 3), radius=wp_grootte / 2, color="green", ec="black")
+    ax.add_patch(ww)
+    ax.text(27.5, 3, "WW", ha="center", va="center", fontsize=wp_grootte * schaal_factor, fontweight="bold")
+
 
     # ⚙️ **Warmtepomp**
-    warmtepomp = patches.Circle((4.5, 3), radius=wp_grootte / 2, color="lightblue", ec="black")
-    ax.add_patch(warmtepomp)
-    ax.text(4.5, 3, "WP", ha="center", va="center", fontsize=letter_grootte*schaal_factor*1.5, fontweight="bold")
+    pos_WP1 = (23,4.5)
+    pos_WP2 = (21,1.5)
+    pos_WP3 = ()
+    pos_WP4 = ()
+    pos_WP5 = ()
+    pos_WP6 = ()
+    pos_WP7 = ()
+    pos_WP8 = ()
+    pos_WP9 = ()
+
+
+
+    WP1 = patches.Circle(pos_WP1, radius=wp_grootte / 2, color="green", ec="black")
+    ax.add_patch(WP1)
+    ax.text(pos_WP1[0],pos_WP1[1], "WP1", ha="center", va="center", fontsize=wp_grootte*schaal_factor, fontweight="bold")
+
+    WP2 = patches.Circle(pos_WP2, radius=wp_grootte / 2, color="green", ec="black")
+    ax.add_patch(WP2)
+    ax.text(pos_WP2[0], pos_WP2[1], "WP2", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
+            fontweight="bold")
 
     # 🔲 **Temperatuurkaders**
     temperaturen = {
-        (1.2, 3.2): str(solution["T1"])+"°C",  # Begin leiding 1
-        (3.8, 3.2): str(solution["T2"])+"°C",  # Einde leiding 1
-        (5.2, 3.2): str(solution["T1"])+"°C",  # Warmtepomp uitgang
-        (7.8, 3.2): str(solution["T16"])+"°C"  # Einde leiding 2
+        #WW
+        (28, 3.5, "orange"): str(T_imec) + "°C",
+        (28, 2.5, "lightblue"): str(solution["T naar Dijle"]) + "°C",
+        (27, 3.5, "red"): str(solution["T WARMTEWISSELAAR OUT"]) + "°C",
+        (27, 2.5, "blue"): str(solution["T WARMTEWISSELAAR IN"]) + "°C",
+        #WP1
+        (23.5, 4, "red"): str(solution["T WP1 IN"]) + "°C",
+        (22.5, 4, "blue"): str(solution["T WP1 OUT"]) + "°C",
+        #WP2
+        (20.5, 2, "red"): str(solution["T WP2 IN"]) + "°C",
+        (21.5, 2, "blue"): str(solution["T WP2 OUT"]) + "°C",
     }
-
-    for (x, y), temp in temperaturen.items():
-        rect = patches.Rectangle((x - kader_grootte / 2, y - 0.2), kader_grootte, kader_grootte, color="white", ec="black")
-        ax.add_patch(rect)
-        ax.text(x, y, temp, ha="center", va="center", fontsize=letter_grootte*schaal_factor, fontweight="bold")
+    drempel = 10
+    for (x, y, letter_color), temp in temperaturen.items():
+        waarde = float(temp.replace("°C", ""))  # Extract waarde uit string
+        #if waarde < drempel:
+            # ❄️ Koud water → Blauw
+            #facecolor = "lightblue"
+            #edgecolor = "blue"
+            #letter_color = "blue"
+        #else:
+            # 🔥 Warm water → Rood
+            #facecolor = "lightcoral"
+            #edgecolor = "red"
+            #letter_color = "red"
+        #rect = patches.Rectangle((x - kader_grootte / 2, y - 0.2), kader_grootte, kader_grootte, color=facecolor, ec=edgecolor)
+        #ax.add_patch(rect)
+        ax.text(x, y, temp, ha="center", va="center", fontsize=kader_grootte*schaal_factor, fontweight="bold",color=letter_color)
 
     # 🔧 **Lay-out instellingen**
 
@@ -231,7 +288,9 @@ U = 3000  # W/m²·K
 
 
 ### WARMTEPOMPEN
-model_WP = "fixed"
+model_WP = st.selectbox("COP-model", ["fixed", "model2"])
+#model_WP = "fixed"
+COP_fixed = 4
 
 max_heat_demand_WP_1 = 250000  # W
 percentage_WP_1 = 0.70
@@ -242,9 +301,11 @@ percentage_WP_2 = 0.70
 T_hot_out_WP_2 = 40 #°C
 
 ### FLUIDS
-T_imec = 21.8
+#T_imec = 21.8
+T_imec = st.number_input("Temperatuur IMEC",value=21.8,step=0.1)
+debiet_backbone = st.slider("Volumedebiet backbone [m^3/h]", 20, 80, value=70)
 debiet_imec = 60 #m3/h
-debiet_backbone = 40 #m3/h
+#debiet_backbone = 50 #m3/h
 dichtheid_fluid_imec = 997 #kg/m3
 dichtheid_fluid_backbone = 997 #kg/m3
 Cp_fluid_imec = 4180  # J/kg·K
@@ -260,15 +321,15 @@ L_1_2 = 0 # m
 L_2_3 = 0 # m
 
 ### WARMTEPOMPEN DEBIETEN
-X_WP1 = 0.2
-X_WP2 = 0.2
-X_WP3 = 0.2
-X_WP4 = 0.2
-X_WP5 = 0.1
+X_WP1 = 0.15
+X_WP2 = 0.15
+X_WP3 = 0.15
+X_WP4 = 0.15
+X_WP5 = 0.15
 X_WP6 = 0.1
-X_WP7 = 0.0
-X_WP8 = 0.0
-X_WP9 = 0.0
+X_WP7 = 0.05
+X_WP8 = 0.05
+X_WP9 = 0.05
 
 if round(X_WP1 + X_WP2 + X_WP3 + X_WP4 + X_WP5 + X_WP6 + X_WP7 + X_WP8 + X_WP9,1) == 1:
     bereken_massadebieten_in_leidingen()
@@ -278,8 +339,8 @@ else:
 
 
 ### ALGEMENE WERKING SCRIPT
-initial_guess_T_WW_in = 5
-iteratie_error_marge = 0.1
+initial_guess_T_WW_in = 7
+iteratie_error_marge = 0.01
 aantal_cijfers_na_komma = 2
 
 ####################################
@@ -313,9 +374,9 @@ for WP, value in P_compressor_WP_sorted.items():
 leiding_dikte = 2  # Dikte van leidingen
 kader_grootte = 0.5  # Grootte temperatuurkaders
 wp_grootte = 1  # Warmtepomp-grootte
-letter_grootte = 60  # Tekstgrootte
-#T_A = st.number_input("Temperatuur IMEC",value=21.8,step=0.1)
-#st.title("Warmtenet Visualisatie")
-#st.pyplot(teken_schema(solution))
+schaal_factor = 30
+st.title("Warmtenet Visualisatie")
+st.pyplot(teken_schema(solution))
 
+#         streamlit run Main.py
 
