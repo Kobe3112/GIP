@@ -178,7 +178,7 @@ def itereer_over_volledig_netwerk():
     solution['T naar Dijle'] = T_naar_Dijle
 
 def teken_schema(solution):
-    fig, ax = plt.subplots(figsize=(30, 10))
+    fig, ax = plt.subplots(figsize=(25, 10))
     ax.set_aspect('equal')  # Zorgt ervoor dat cirkels geen ovalen worden
     x_min, x_max = ax.get_xlim()
 
@@ -203,7 +203,33 @@ def teken_schema(solution):
         # naar WP2
         ((21.1, 2.9), (21.1, 2),"blue"),
         ((20.9, 3.1), (20.9, 2),"red"),
+        # naar boven
+        ((25.1, 2.9), (25.1, 6), "blue"),
+        ((24.9, 3.1), (24.9, 6), "red"),
+
+        # nog naar boven
+        ((25.1, 6), (25.1, 7.1), "blue"),
+        ((24.9, 6), (24.9, 6.9), "red"),
+        # bovenleiding naar WP6
+        ((25.1, 7.1), (16.9, 7.1), "blue"),
+        ((24.9, 6.9), (17.1, 6.9), "red"),
+        # naar WP 4
+        ((20.9, 7.1), (20.9, 6), "blue"),
+        ((21.1, 6.9), (21.1, 6), "red"),
+        # naar WP 5
+        ((18.9, 7.1), (18.9, 6), "blue"),
+        ((19.1, 6.9), (19.1, 6), "red"),
+        # naar WP 6
+        ((16.9, 7.1), (16.9, 6), "blue"),
+        ((17.1, 6.9), (17.1, 6), "red"),
+
     ]
+    if WP3_checkbox:
+        leidingen.extend([
+            # naar WP 3
+            ((25.1, 5.9), (27, 5.9), "blue"),
+            ((24.9, 6.1), (27, 6.1), "red"),
+        ])
 
     for (start, eind, color) in leidingen:
         ax.plot([start[0], eind[0]], [start[1], eind[1]], color=color, linewidth=leiding_dikte)
@@ -217,10 +243,11 @@ def teken_schema(solution):
     # ⚙️ **Warmtepomp**
     pos_WP1 = (23,4.5)
     pos_WP2 = (21,1.5)
-    pos_WP3 = ()
-    pos_WP4 = ()
-    pos_WP5 = ()
-    pos_WP6 = ()
+    if WP3_checkbox:
+        pos_WP3 = (27.5,6)
+    pos_WP4 = (21,5.5)
+    pos_WP5 = (19,5.5)
+    pos_WP6 = (17,5.5)
     pos_WP7 = ()
     pos_WP8 = ()
     pos_WP9 = ()
@@ -235,20 +262,49 @@ def teken_schema(solution):
     ax.add_patch(WP2)
     ax.text(pos_WP2[0], pos_WP2[1], "WP2", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
             fontweight="bold")
+    if WP3_checkbox:
+        WP3 = patches.Circle(pos_WP3, radius=wp_grootte / 2, color="green", ec="black")
+        ax.add_patch(WP3)
+        ax.text(pos_WP3[0], pos_WP3[1], "WP3", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
+                fontweight="bold")
+    WP4 = patches.Circle(pos_WP4, radius=wp_grootte / 2, color="green", ec="black")
+    ax.add_patch(WP4)
+    ax.text(pos_WP4[0], pos_WP4[1], "WP4", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
+            fontweight="bold")
+    WP5 = patches.Circle(pos_WP5, radius=wp_grootte / 2, color="green", ec="black")
+    ax.add_patch(WP5)
+    ax.text(pos_WP5[0], pos_WP5[1], "WP5", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
+            fontweight="bold")
+    WP6 = patches.Circle(pos_WP6, radius=wp_grootte / 2, color="green", ec="black")
+    ax.add_patch(WP6)
+    ax.text(pos_WP6[0], pos_WP6[1], "WP6", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
+            fontweight="bold")
 
     # 🔲 **Temperatuurkaders**
     temperaturen = {
         #WW
-        (28, 3.5, "orange"): str(T_imec) + "°C",
-        (28, 2.5, "lightblue"): str(solution["T naar Dijle"]) + "°C",
-        (27, 3.5, "red"): str(solution["T WARMTEWISSELAAR OUT"]) + "°C",
-        (27, 2.5, "blue"): str(solution["T WARMTEWISSELAAR IN"]) + "°C",
-        #WP1
-        (23.5, 4, "red"): str(solution["T WP1 IN"]) + "°C",
-        (22.5, 4, "blue"): str(solution["T WP1 OUT"]) + "°C",
-        #WP2
-        (20.5, 2, "red"): str(solution["T WP2 IN"]) + "°C",
-        (21.5, 2, "blue"): str(solution["T WP2 OUT"]) + "°C",
+        (28.1, 3.5, "orange"): str(round(T_imec,2)) + "°C",
+        (28.1, 2.5, "lightblue"): str(solution["T naar Dijle"]) + "°C",
+        (26.9, 3.5, "red"): str(solution["T WARMTEWISSELAAR OUT"]) + "°C",
+        (26.9, 2.5, "blue"): str(solution["T WARMTEWISSELAAR IN"]) + "°C",
+        # WP1
+        (23.6, 3.9, "red"): str(solution["T WP1 IN"]) + "°C",
+        (22.4, 3.9, "blue"): str(solution["T WP1 OUT"]) + "°C",
+        # WP2
+        (20.4, 2.1, "red"): str(solution["T WP2 IN"]) + "°C",
+        (21.6, 2.1, "blue"): str(solution["T WP2 OUT"]) + "°C",
+        # WP3
+        (26.8, 6.4, "red"): str(solution["T WP3 IN"]) + "°C",
+        (26.8, 5.6, "blue"): str(solution["T WP3 OUT"]) + "°C",
+        # WP4
+        (21.6, 6.1, "red"): str(solution["T WP4 IN"]) + "°C",
+        (20.4, 6.1, "blue"): str(solution["T WP4 OUT"]) + "°C",
+        # WP5
+        (19.6, 6.1, "red"): str(solution["T WP4 IN"]) + "°C",
+        (18.4, 6.1, "blue"): str(solution["T WP4 OUT"]) + "°C",
+        # WP6
+        (17.6, 6.1, "red"): str(solution["T WP4 IN"]) + "°C",
+        (16.4, 6.1, "blue"): str(solution["T WP4 OUT"]) + "°C",
     }
     drempel = 10
     for (x, y, letter_color), temp in temperaturen.items():
@@ -337,6 +393,7 @@ else:
     print("Massafracties door warmtepompen zijn samen niet gelijk aan 1")
     exit()
 
+WP3_checkbox = st.checkbox("Warmtepomp 3")
 
 ### ALGEMENE WERKING SCRIPT
 initial_guess_T_WW_in = 7
@@ -356,20 +413,33 @@ for Temperatuur in solution:
 ####################################
 ###### SHOW SOLUTION ###############
 ####################################
-print("-----------------------------------------------")
-print("Dit zijn alle temperaturen:")
-solution_sorted = dict(sorted(solution.items()))
-for Temperatuur, value in solution_sorted.items():
-    print("*",f"{Temperatuur}: {value}","°C")
-print("-----------------------------------------------")
-print("En dit zijn de compressor vermogens:")
-P_compressor_WP_sorted = dict(sorted(P_compressor_WP.items()))
-for WP, value in P_compressor_WP_sorted.items():
-    print("*",f"{WP}: {round(value/1000)}","kW")
 
+def show_solution():
+    print("-----------------------------------------------")
+    print("Dit zijn alle temperaturen:")
+    solution_sorted = dict(sorted(solution.items()))
+    for Temperatuur, value in solution_sorted.items():
+        print("*",f"{Temperatuur}: {value}","°C")
+    print("-----------------------------------------------")
+    print("En dit zijn de compressor vermogens:")
+    P_compressor_WP_sorted = dict(sorted(P_compressor_WP.items()))
+    for WP, value in P_compressor_WP_sorted.items():
+        print("*",f"{WP}: {round(value/1000)}","kW")
+#show_solution()
 ####################################
 ###### SOLUTION VISUAL ############# ==> IN PROGRESS, NOG NIKS VAN AANTREKKEN
 ####################################
+
+solution["T WP3 IN"] = 0
+solution["T WP3 OUT"] = 0
+solution["T WP4 IN"] = 0
+solution["T WP4 OUT"] = 0
+solution["T WP5 IN"] = 0
+solution["T WP5 OUT"] = 0
+solution["T WP6 IN"] = 0
+solution["T WP6 OUT"] = 0
+
+
 
 leiding_dikte = 2  # Dikte van leidingen
 kader_grootte = 0.5  # Grootte temperatuurkaders
