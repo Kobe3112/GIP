@@ -24,6 +24,35 @@ def T_daling_warmtepomp(T_cold_in):
         T_hot_out = T_hot_out_WP_2
         massadebiet = m_WP_2
         tekst = "WP2"
+
+    elif T_cold_in == T_I3:
+        percentage = percentage_WP_3
+        max_heat_demand = max_heat_demand_WP_3
+        T_hot_out = T_hot_out_WP_3
+        massadebiet = m_WP_3
+        tekst = "WP3"
+
+    elif T_cold_in == T_I4:
+        percentage = percentage_WP_4
+        max_heat_demand = max_heat_demand_WP_4
+        T_hot_out = T_hot_out_WP_4
+        massadebiet = m_WP_4
+        tekst = "WP4"
+
+    elif T_cold_in == T_I5:
+        percentage = percentage_WP_5
+        max_heat_demand = max_heat_demand_WP_5
+        T_hot_out = T_hot_out_WP_5
+        massadebiet = m_WP_5
+        tekst = "WP5"
+
+    elif T_cold_in == T_I6:
+        percentage = percentage_WP_6
+        max_heat_demand = max_heat_demand_WP_6
+        T_hot_out = T_hot_out_WP_6
+        massadebiet = m_WP_6
+        tekst = "WP6"
+
     else:
         print("Warmtepomp niet gevonden")
         exit()
@@ -45,18 +74,16 @@ def T_daling_leiding(begin_Temperatuur,lengte,massadebiet):
     Pr = (mu_fluid_backbone*Cp_fluid_backbone)/k_fluid_backbone
     Re = (flowspeed_backbone*pipe_diameter*dichtheid_fluid_backbone)/mu_fluid_backbone
 
-    # Dittus-Boelter
-    #n = 0.3
-    #Nu = 0.023 * Re ** 0.8 * Pr ** n
-
-    # constante wandtemperatuur
+    # constante wandtemperatuur (fout)
     Nu = 3.66
 
     h_conv = (Nu*k_fluid_backbone)/pipe_diameter
 
     R_conv = (math.pi*pipe_diameter)/h_conv
     R_steel = math.log((0.5*pipe_diameter+pipe_thickness)/(0.5*pipe_diameter)) / (2*math.pi*k_steel)
-    R_tot = R_conv + R_steel
+    R_ground = math.log((4 * depth) / pipe_diameter) / (2 * math.pi * k_ground)
+
+    R_tot = R_conv + R_steel + R_ground
 
     q = (begin_Temperatuur - T_ground) / R_tot
 
@@ -73,9 +100,12 @@ def T_daling_totaal(T_1):
     global T_I8
     global T_I9
 
+    ##############################################################
 
     T_1_2 = T_daling_leiding(T_1,L_1_2,m_1_2)
     T_2 = T_1 - T_1_2
+
+    # wartepomp 1
 
     T_2_3 = T_daling_leiding(T_2,L_2_3,m_2_3)
     T_3 = T_2 - T_2_3
@@ -89,6 +119,8 @@ def T_daling_totaal(T_1):
     T_O1_14 = T_daling_leiding(T_O1,L_O1_14,m_WP_1)
     T_14_A = T_O1 - T_O1_14
 
+    # warmtepomp 2
+
     T_3_I2 = T_daling_leiding(T_3,L_3_I2,m_WP_2)
     T_I2 = T_3 - T_3_I2
 
@@ -98,59 +130,151 @@ def T_daling_totaal(T_1):
     T_O2_14 = T_daling_leiding(T_O2,L_O2_14,m_WP_2)
     T_14_B = T_O2 - T_O2_14
 
+    # retour
+
     T_14 = meng(T_14_A,m_WP_1,T_14_B,m_WP_2)
 
     T_14_T_15 = T_daling_leiding(T_14,L_14_15,m_14_15)
     T_15_B = T_14 - T_14_T_15
 
-    #om het nu te doen werken ##############
-    T_2_15 = 10
-    T_15_A = T_2 - T_2_15
-    #####################
+    # warmtepomp 3
 
+    T_2_4 = T_daling_leiding(T_2,L_2_4,m_2_4)
+    T_4 = T_2 - T_2_4
 
-    T_15 = meng(T_15_A,m_2_15,T_15_B,m_14_15)
+    T_4_I3 = T_daling_leiding(T_4,L_4_I3,m_WP_3)
+    T_I3 = T_4 - T_4_I3
+
+    T_I3_O3 = T_daling_warmtepomp(T_I3)
+    T_O3 = T_I3 - T_I3_O3
+
+    T_O3_13 = T_daling_leiding(T_O3,L_O3_13,m_WP_3)
+    T_13_A = T_O3 - T_O3_13
+
+    # warmtepomp 4
+
+    T_4_5 = T_daling_leiding(T_4, L_4_5, m_4_5)
+    T_5 = T_4 - T_4_5
+
+    T_5_I4 = T_daling_leiding(T_5, L_5_I4, m_WP_4)
+    T_I4 = T_5 - T_5_I4
+
+    T_I4_O4 = T_daling_warmtepomp(T_I4)
+    T_O4 = T_I4 - T_I4_O4
+
+    T_O4_12 = T_daling_leiding(T_O4, L_O4_12, m_WP_4)
+    T_12_A = T_O4 - T_O4_12
+
+    # warmtepomp 5
+
+    T_5_6 = T_daling_leiding(T_5, L_5_6, m_5_6)
+    T_6 = T_5 - T_5_6
+
+    T_6_I5 = T_daling_leiding(T_6, L_6_I5, m_WP_5)
+    T_I5 = T_6 - T_6_I5
+
+    T_I5_O5 = T_daling_warmtepomp(T_I5)
+    T_O5 = T_I5 - T_I5_O5
+
+    T_O5_11 = T_daling_leiding(T_O5, L_O5_11, m_WP_5)
+    T_11_A = T_O5 - T_O5_11
+
+    # warmtepomp 6
+
+    T_6_7 = T_daling_leiding(T_6, L_6_7, m_WP_6)
+    T_7 = T_6 - T_6_7
+
+    T_7_I6 = T_daling_leiding(T_7, L_7_I6, m_WP_6)
+    T_I6 = T_7 - T_7_I6
+
+    T_I6_O6 = T_daling_warmtepomp(T_I6)
+    T_O6 = T_I6 - T_I6_O6
+
+    T_O6_10 = T_daling_leiding(T_O6, L_O6_10, m_WP_6)
+    T_10 = T_O6 - T_O6_10
+
+    # retour
+
+    T_10_11 = T_daling_leiding(T_10,L_10_11,m_WP_6)
+    T_11_B = T_10 - T_10_11
+
+    T_11 = meng(T_11_A,m_WP_5,T_11_B,m_WP_6)
+
+    T_11_12 = T_daling_leiding(T_11, L_11_12, m_11_12)
+    T_12_B = T_11 - T_11_12
+
+    T_12 = meng(T_12_A,m_WP_4,T_12_B,m_11_12)
+
+    T_12_13 = T_daling_leiding(T_12,L_12_13,m_12_13)
+    T_13_B = T_12 - T_12_13
+
+    T_13 = meng(T_13_A,m_WP_3,T_13_B,m_12_13)
+
+    T_13_15 = T_daling_leiding(T_13,L_13_15,m_13_15)
+    T_15_A = T_13 - T_13_15
+
+    T_15 = meng(T_15_A,m_2_4,T_15_B,m_14_15)
 
     T_15_16 = T_daling_leiding(T_15,L_15_16,m_15_16)
     T_16 = T_15 - T_15_16
 
+    ##############################################################
+
     solution['T2'] = T_2
     solution['T3'] = T_3
+    solution['T4'] = T_4
     solution['T14'] = T_14
     solution['T15'] = T_15
     solution['T WP1 IN'] = T_I1
     solution['T WP1 OUT'] = T_O1
     solution['T WP2 IN'] = T_I2
     solution['T WP2 OUT'] = T_O2
+    solution['T WP3 IN'] = T_I3
+    solution['T WP3 OUT'] = T_O3
+    solution['T WP4 IN'] = T_I4
+    solution['T WP4 OUT'] = T_O4
+    solution['T WP5 IN'] = T_I5
+    solution['T WP5 OUT'] = T_O5
+    solution['T WP6 IN'] = T_I6
+    solution['T WP6 OUT'] = T_O6
     return T_1 - T_16
+
 def bereken_massadebieten_in_leidingen():
     global m_1_2
     global m_2_3
     global m_WP_1
     global m_WP_2
-    global m_14_15
+    global m_2_4
+    global m_WP_3
+    global m_4_5
+    global m_WP_4
+    global m_5_6
+    global m_WP_5
+    global m_WP_6
+    global m_11_12
+    global m_12_13
     global m_13_15
+    global m_14_15
     global m_15_16
-
-
-
-    # om het nu te doen werken ############
-    global m_2_15
-    ###################
 
     m_1_2 = m_dot_backbone
     m_WP_1 = X_WP1 * m_dot_backbone
     m_WP_2 = X_WP2 * m_dot_backbone
     m_2_3 = m_WP_1 + m_WP_2
-    m_14_15 = m_WP_1 + m_WP_2
+    m_14_15 = m_2_3
 
+    m_2_4 = m_dot_backbone - m_2_3
+    m_WP_3 = X_WP3 * m_dot_backbone
+    m_4_5 = m_2_4 - m_WP_3
+    m_WP_4 = X_WP4 * m_dot_backbone
+    m_5_6 = m_4_5 - m_WP_4
+    m_WP_5 = X_WP5 * m_dot_backbone
+    m_WP_6 = X_WP6 * m_dot_backbone
+    m_11_12 = m_5_6
+    m_12_13 = m_4_5
+    m_13_15 = m_2_4
 
-    # om het nu te doen werken #############"""
-    m_2_15 = m_dot_backbone - m_2_3
-    ###########################
-
-
-    m_15_16 = m_14_15 + m_2_15
+    m_15_16 = m_14_15 + m_13_15
 
     if m_15_16 != m_dot_backbone:
         print("Er is een fout me de massadebieten")
@@ -256,6 +380,22 @@ max_heat_demand_WP_2 = 200000  # W
 percentage_WP_2 = 0.70
 T_hot_out_WP_2 = 40 #°C
 
+max_heat_demand_WP_3 = 200000  # W
+percentage_WP_3 = 0.70
+T_hot_out_WP_3 = 40 #°C
+
+max_heat_demand_WP_4 = 200000  # W
+percentage_WP_4 = 0.70
+T_hot_out_WP_4 = 40 #°C
+
+max_heat_demand_WP_5 = 200000  # W
+percentage_WP_5 = 0.70
+T_hot_out_WP_5 = 40 #°C
+
+max_heat_demand_WP_6 = 200000  # W
+percentage_WP_6 = 0.70
+T_hot_out_WP_6 = 40 #°C
+
 ### FLUIDS
 T_imec = 21.8
 debiet_imec = 60 #m3/h
@@ -271,6 +411,8 @@ m_dot_imec = debiet_imec * dichtheid_fluid_imec / 3600  # kg/s
 m_dot_backbone = debiet_backbone * dichtheid_fluid_backbone / 3600  # kg/s
 
 ### LEIDINGEN ONTWERPDATA
+depth = 1  # m
+k_ground = 1  # W/(m*K)
 pipe_thickness = 0.01  # m
 k_steel = 45  # W/(m*K)
 T_ground = 10  # °C
@@ -285,6 +427,22 @@ L_3_I2 = 75  # m
 L_O2_14 = L_3_I2  # m
 L_14_15 = L_2_3  # m
 L_15_16 = L_1_2  # m
+L_2_4 = 60  # m
+L_4_I3 = 115  # m
+L_O3_13 = L_4_I3  # m
+L_13_15 = L_2_4  # m
+L_4_5 = 190  # m
+L_5_I4 = 40  # m
+L_O4_12 = L_5_I4  # m
+L_5_6 = 50  # m
+L_6_I5 = 25  # m
+L_O5_11 = L_6_I5  # m
+L_6_7 = 100  # m
+L_7_I6 = 25  # m
+L_O6_10 = L_7_I6  # m
+L_10_11 = L_6_7  # m
+L_11_12 = L_5_6  # m
+L_12_13 = L_4_5  # m
 
 ### WARMTEPOMPEN DEBIETEN
 X_WP1 = 0.2
