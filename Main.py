@@ -1,7 +1,15 @@
 import math
+<<<<<<< .merge_file_SmKy3y
 import streamlit as st
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+=======
+#import streamlit as st
+#import matplotlib.pyplot as plt
+#import matplotlib.patches as patches
+import random
+import pygfunction as gt
+>>>>>>> .merge_file_J3HEtn
 
 
 #################################################
@@ -52,9 +60,33 @@ def T_daling_warmtepomp(T_cold_in):
         massadebiet = m_WP_6
         tekst = "WP6"
 
+    elif T_cold_in == T_I7:
+        percentage = percentage_WP_7
+        max_heat_demand = max_heat_demand_WP_7
+        T_hot_out = T_hot_out_WP_7
+        massadebiet = m_WP_7
+        tekst = "WP7"
+
+    elif T_cold_in == T_I8:
+        percentage = percentage_WP_8
+        max_heat_demand = max_heat_demand_WP_8
+        T_hot_out = T_hot_out_WP_8
+        massadebiet = m_WP_8
+        tekst = "WP8"
+
+    elif T_cold_in == T_I9:
+        percentage = percentage_WP_9
+        max_heat_demand = max_heat_demand_WP_9
+        T_hot_out = T_hot_out_WP_9
+        massadebiet = m_WP_9
+        tekst = "WP9"
+
     else:
         print("Warmtepomp niet gevonden")
         exit()
+
+    if massadebiet == 0:
+        return 0
 
     COP = bereken_COP(T_cold_in,T_hot_out,model_WP)
     Q_cond = percentage * max_heat_demand
@@ -67,26 +99,38 @@ def bereken_COP(T_cold_in, T_hot_out, model):
     if model == "fixed":
         return (COP_fixed)
 def T_daling_leiding(begin_Temperatuur,lengte,massadebiet):
+
+    if massadebiet == 0:
+        return 0
     # neem constante snelheid aan doorheen de buizen
     pipe_diameter = math.sqrt((4*massadebiet)/(math.pi*dichtheid_fluid_backbone*flowspeed_backbone))
 
     Pr = (mu_fluid_backbone*Cp_fluid_backbone)/k_fluid_backbone
     Re = (flowspeed_backbone*pipe_diameter*dichtheid_fluid_backbone)/mu_fluid_backbone
 
-    # constante wandtemperatuur (fout)
-    Nu = 3.66
-
-    h_conv = (Nu*k_fluid_backbone)/pipe_diameter
+    h_conv = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
+        m_flow_pipe=massadebiet,
+        r_in=pipe_diameter/2,
+        mu_f=mu_fluid_backbone,
+        rho_f=dichtheid_fluid_backbone,
+        k_f=k_fluid_backbone,
+        cp_f=Cp_fluid_backbone,
+        epsilon=epsilon_steel)
 
     R_conv = (math.pi*pipe_diameter)/h_conv
     R_steel = math.log((0.5*pipe_diameter+pipe_thickness)/(0.5*pipe_diameter)) / (2*math.pi*k_steel)
     R_ground = math.log((4 * depth) / pipe_diameter) / (2 * math.pi * k_ground)
-
     R_tot = R_conv + R_steel + R_ground
 
-    q = (begin_Temperatuur - T_ground) / R_tot
-
-    return (lengte*q)/(Cp_fluid_backbone*massadebiet)
+    T_diff_tot = 0
+    T_in = begin_Temperatuur
+    for i in range(lengte):
+        q = (T_in - T_ground) / R_tot
+        T_diff = q / (Cp_fluid_backbone * massadebiet)
+        T_diff_tot = T_diff_tot + T_diff
+        T_in = T_in - T_diff
+        print(T_in)
+    return T_diff_tot
 
 def T_daling_totaal(T_1):
     global T_I1
@@ -190,11 +234,55 @@ def T_daling_totaal(T_1):
     T_O6 = T_I6 - T_I6_O6
 
     T_O6_10 = T_daling_leiding(T_O6, L_O6_10, m_WP_6)
-    T_10 = T_O6 - T_O6_10
+    T_10_A = T_O6 - T_O6_10
+
+    # warmtepomp 7
+
+    T_7_8 = T_daling_leiding(T_7,L_7_8,m_7_8)
+    T_8 = T_7 - T_7_8
+
+    T_8_I7 = T_daling_leiding(T_8, L_8_I7, m_WP_7)
+    T_I7 = T_8 - T_8_I7
+
+    T_I7_O7 = T_daling_warmtepomp(T_I7)
+    T_O7 = T_I7 - T_I7_O7
+
+    # warmtepomp 8
+
+    T_8_I8 = T_daling_leiding(T_8, L_8_I8, m_WP_8)
+    T_I8 = T_8 - T_8_I8
+
+    T_I8_O8 = T_daling_warmtepomp(T_I8)
+    T_O8 = T_I8 - T_I8_O8
+
+    # warmtepomp 9
+
+    T_8_I9 = T_daling_leiding(T_8, L_8_I9, m_WP_9)
+    T_I9 = T_8 - T_8_I9
+
+    T_I9_O9 = T_daling_warmtepomp(T_I9)
+    T_O9 = T_I9 - T_I9_O9
 
     # retour
 
-    T_10_11 = T_daling_leiding(T_10,L_10_11,m_WP_6)
+    T_O7_9 = T_daling_leiding(T_O7,L_O7_9,m_WP_7)
+    T_9_A = T_O7_9
+
+    T_O8_9 = T_daling_leiding(T_O8, L_O8_9, m_WP_8)
+    T_9_B = T_O8_9
+
+    T_O9_9 = T_daling_leiding(T_O9, L_O9_9, m_WP_9)
+    T_9_C = T_O9_9
+
+    T_9_1 = meng(T_9_A,m_WP_7,T_9_B,m_WP_8)
+    T_9 = meng(T_9_1,(m_WP_7 + m_WP_8),T_9_C,m_WP_9)
+
+    T_9_10 = T_daling_leiding(T_9,L_9_10,m_9_10)
+    T_10_B = T_9 - T_9_10
+
+    T_10 = meng(T_10_A,m_WP_6,T_10_B,m_9_10)
+
+    T_10_11 = T_daling_leiding(T_10,L_10_11,m_10_11)
     T_11_B = T_10 - T_10_11
 
     T_11 = meng(T_11_A,m_WP_5,T_11_B,m_WP_6)
@@ -236,6 +324,12 @@ def T_daling_totaal(T_1):
     solution['T WP5 OUT'] = T_O5
     solution['T WP6 IN'] = T_I6
     solution['T WP6 OUT'] = T_O6
+    solution['T WP7 IN'] = T_I7
+    solution['T WP7 OUT'] = T_O7
+    solution['T WP8 IN'] = T_I8
+    solution['T WP8 OUT'] = T_O8
+    solution['T WP9 IN'] = T_I9
+    solution['T WP9 OUT'] = T_O9
     return T_1 - T_16
 
 def bereken_massadebieten_in_leidingen():
@@ -249,7 +343,14 @@ def bereken_massadebieten_in_leidingen():
     global m_WP_4
     global m_5_6
     global m_WP_5
+    global m_6_7
     global m_WP_6
+    global m_7_8
+    global m_WP_7
+    global m_WP_8
+    global m_WP_9
+    global m_9_10
+    global m_10_11
     global m_11_12
     global m_12_13
     global m_13_15
@@ -268,7 +369,14 @@ def bereken_massadebieten_in_leidingen():
     m_WP_4 = X_WP4 * m_dot_backbone
     m_5_6 = m_4_5 - m_WP_4
     m_WP_5 = X_WP5 * m_dot_backbone
+    m_6_7 = m_5_6 - m_WP_5
     m_WP_6 = X_WP6 * m_dot_backbone
+    m_WP_7 = X_WP7 * m_dot_backbone
+    m_WP_8 = X_WP8 * m_dot_backbone
+    m_WP_9 = X_WP9 * m_dot_backbone
+    m_7_8 = m_WP_7 + m_WP_8 + m_WP_9
+    m_9_10 = m_7_8
+    m_10_11 = m_6_7
     m_11_12 = m_5_6
     m_12_13 = m_4_5
     m_13_15 = m_2_4
@@ -278,6 +386,13 @@ def bereken_massadebieten_in_leidingen():
     if m_15_16 != m_dot_backbone:
         print("Er is een fout me de massadebieten")
 def meng(T1,m1,T2,m2):
+
+    if m1 == 0:
+        return T2
+
+    if m2 == 0:
+        return T1
+
     T_new = (T1*m1+T2*m2)/(m1+m2)
     return T_new
 def itereer_over_volledig_netwerk():
@@ -563,6 +678,18 @@ max_heat_demand_WP_6 = 200000  # W
 percentage_WP_6 = 0.70
 T_hot_out_WP_6 = 40 #°C
 
+max_heat_demand_WP_7 = 200000  # W
+percentage_WP_7 = 0.70
+T_hot_out_WP_7 = 40 #°C
+
+max_heat_demand_WP_8 = 200000  # W
+percentage_WP_8 = 0.70
+T_hot_out_WP_8 = 40 #°C
+
+max_heat_demand_WP_9 = 200000  # W
+percentage_WP_9 = 0.70
+T_hot_out_WP_9 = 40 #°C
+
 ### FLUIDS
 debiet_imec = 60 #m3/h
 
@@ -581,6 +708,7 @@ depth = 1  # m
 k_ground = 1  # W/(m*K)
 pipe_thickness = 0.01  # m
 k_steel = 45  # W/(m*K)
+epsilon_steel = 0.00005   # m
 T_ground = 10  # °C
 flowspeed_backbone = 2  # m/s
 
@@ -609,17 +737,39 @@ L_O6_10 = L_7_I6  # m
 L_10_11 = L_6_7  # m
 L_11_12 = L_5_6  # m
 L_12_13 = L_4_5  # m
+L_7_8 = 375  # m
+L_8_I7 = 325  # m
+L_8_I8 = 50  # m
+L_8_I9 = 50  # m
+L_O9_9 = L_8_I9  # m
+L_O8_9 = L_8_I8  # m
+L_O7_9 = L_8_I7  # m
+L_9_10 = L_7_8  # m
 
 ### WARMTEPOMPEN DEBIETEN
-X_WP1 = 0.15
-X_WP2 = 0.15
-X_WP3 = 0.15
-X_WP4 = 0.15
-X_WP5 = 0.15
-X_WP6 = 0.1
-X_WP7 = 0.05
-X_WP8 = 0.05
-X_WP9 = 0.05
+
+WP7_8_9_checkbox = False
+
+if WP7_8_9_checkbox:
+    X_WP1 = 0.2
+    X_WP2 = 0.1
+    X_WP3 = 0.1
+    X_WP4 = 0.1
+    X_WP5 = 0.1
+    X_WP6 = 0.1
+    X_WP7 = 0.1
+    X_WP8 = 0.1
+    X_WP9 = 0.1
+else:
+    X_WP1 = 0.2
+    X_WP2 = 0.2
+    X_WP3 = 0.2
+    X_WP4 = 0.2
+    X_WP5 = 0.1
+    X_WP6 = 0.1
+    X_WP7 = 0.0
+    X_WP8 = 0.0
+    X_WP9 = 0.0
 
 if round(X_WP1 + X_WP2 + X_WP3 + X_WP4 + X_WP5 + X_WP6 + X_WP7 + X_WP8 + X_WP9,1) == 1:
     bereken_massadebieten_in_leidingen()
