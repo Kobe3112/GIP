@@ -532,7 +532,6 @@ with st.expander("Gegevens invoeren"):
         if model_WP == "fixed":
             COP_fixed = st.number_input("Fixed Value:", min_value=1.0, max_value=10.0, value=4.0, step=0.1)
 
-
 ### WARMTEWISSELAAR
 type_WW = 'tegenstroom'
 A = 50  # m²
