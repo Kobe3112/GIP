@@ -186,8 +186,10 @@ def teken_schema(solution):
     # 🏭 **Leidingen**
     leidingen = [
         # naar WW
-        ((30, 2.9), (28, 2.9),"lightblue"),
+        ((30, 2.9), (28, 2.9),"purple"),
+        ((30, 2.9), (30, 1), "purple"),
         ((30, 3.1), (28, 3.1),"orange"),
+        ((30, 3.1), (30, 7), "orange"),
         # vertrek uit WW
         ((27, 3.1), (25, 3.1),"red"),
         ((27, 2.9), (25, 2.9),"blue"),
@@ -206,7 +208,9 @@ def teken_schema(solution):
         # naar boven
         ((25.1, 2.9), (25.1, 6), "blue"),
         ((24.9, 3.1), (24.9, 6), "red"),
-
+        # naar WP 3
+        ((25.1, 5.9), (27, 5.9), "blue"),
+        ((24.9, 6.1), (27, 6.1), "red"),
         # nog naar boven
         ((25.1, 6), (25.1, 7.1), "blue"),
         ((24.9, 6), (24.9, 6.9), "red"),
@@ -224,11 +228,23 @@ def teken_schema(solution):
         ((17.1, 6.9), (17.1, 6), "red"),
 
     ]
-    if WP3_checkbox:
+    if WP7_8_9_checkbox:
         leidingen.extend([
-            # naar WP 3
-            ((25.1, 5.9), (27, 5.9), "blue"),
-            ((24.9, 6.1), (27, 6.1), "red"),
+            # uiterst links
+            ((16.9, 7.1), (14.9, 7.1), "blue"),
+            ((17.1, 6.9), (15.1, 6.9), "red"),
+            # naar beneden
+            ((14.9, 7.1), (14.9, 4), "blue"),
+            ((15.1, 6.9), (15.1, 4), "red"),
+            # naar WP 9
+            ((14.9, 4), (14.9, 3), "blue"),
+            ((15.1, 4), (15.1, 3), "red"),
+            # naar WP 8
+            ((14.9, 4.1), (16, 4.1), "blue"),
+            ((15.1, 3.9), (16, 3.9), "red"),
+            # naar WP 7
+            ((14.9, 4.1), (14, 4.1), "blue"),
+            ((15.1, 3.9), (14, 3.9), "red"),
         ])
 
     for (start, eind, color) in leidingen:
@@ -243,14 +259,14 @@ def teken_schema(solution):
     # ⚙️ **Warmtepomp**
     pos_WP1 = (23,4.5)
     pos_WP2 = (21,1.5)
-    if WP3_checkbox:
-        pos_WP3 = (27.5,6)
+    pos_WP3 = (27.5,6)
     pos_WP4 = (21,5.5)
     pos_WP5 = (19,5.5)
     pos_WP6 = (17,5.5)
-    pos_WP7 = ()
-    pos_WP8 = ()
-    pos_WP9 = ()
+    if WP7_8_9_checkbox:
+        pos_WP7 = (13.5,4)
+        pos_WP8 = (16.5,4)
+        pos_WP9 = (15,2.5)
 
 
 
@@ -262,11 +278,10 @@ def teken_schema(solution):
     ax.add_patch(WP2)
     ax.text(pos_WP2[0], pos_WP2[1], "WP2", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
             fontweight="bold")
-    if WP3_checkbox:
-        WP3 = patches.Circle(pos_WP3, radius=wp_grootte / 2, color="green", ec="black")
-        ax.add_patch(WP3)
-        ax.text(pos_WP3[0], pos_WP3[1], "WP3", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
-                fontweight="bold")
+    WP3 = patches.Circle(pos_WP3, radius=wp_grootte / 2, color="green", ec="black")
+    ax.add_patch(WP3)
+    ax.text(pos_WP3[0], pos_WP3[1], "WP3", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
+            fontweight="bold")
     WP4 = patches.Circle(pos_WP4, radius=wp_grootte / 2, color="green", ec="black")
     ax.add_patch(WP4)
     ax.text(pos_WP4[0], pos_WP4[1], "WP4", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
@@ -279,14 +294,26 @@ def teken_schema(solution):
     ax.add_patch(WP6)
     ax.text(pos_WP6[0], pos_WP6[1], "WP6", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
             fontweight="bold")
-
+    if WP7_8_9_checkbox:
+        WP7 = patches.Circle(pos_WP7, radius=wp_grootte / 2, color="green", ec="black")
+        ax.add_patch(WP7)
+        ax.text(pos_WP7[0], pos_WP7[1], "WP7", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
+                fontweight="bold")
+        WP8 = patches.Circle(pos_WP8, radius=wp_grootte / 2, color="green", ec="black")
+        ax.add_patch(WP8)
+        ax.text(pos_WP8[0], pos_WP8[1], "WP8", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
+                fontweight="bold")
+        WP9 = patches.Circle(pos_WP9, radius=wp_grootte / 2, color="green", ec="black")
+        ax.add_patch(WP9)
+        ax.text(pos_WP9[0], pos_WP9[1], "WP9", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
+                fontweight="bold")
     # 🔲 **Temperatuurkaders**
     temperaturen = {
         #WW
-        (28.1, 3.5, "orange"): str(round(T_imec,2)) + "°C",
-        (28.1, 2.5, "lightblue"): str(solution["T naar Dijle"]) + "°C",
-        (26.9, 3.5, "red"): str(solution["T WARMTEWISSELAAR OUT"]) + "°C",
-        (26.9, 2.5, "blue"): str(solution["T WARMTEWISSELAAR IN"]) + "°C",
+        (28.3, 3.4, "orange"): str(round(T_imec,2)) + "°C",
+        (28.3, 2.6, "purple"): str(solution["T naar Dijle"]) + "°C",
+        (26.7, 3.4, "red"): str(solution["T WARMTEWISSELAAR OUT"]) + "°C",
+        (26.7, 2.6, "blue"): str(solution["T WARMTEWISSELAAR IN"]) + "°C",
         # WP1
         (23.6, 3.9, "red"): str(solution["T WP1 IN"]) + "°C",
         (22.4, 3.9, "blue"): str(solution["T WP1 OUT"]) + "°C",
@@ -300,12 +327,24 @@ def teken_schema(solution):
         (21.6, 6.1, "red"): str(solution["T WP4 IN"]) + "°C",
         (20.4, 6.1, "blue"): str(solution["T WP4 OUT"]) + "°C",
         # WP5
-        (19.6, 6.1, "red"): str(solution["T WP4 IN"]) + "°C",
-        (18.4, 6.1, "blue"): str(solution["T WP4 OUT"]) + "°C",
+        (19.6, 6.1, "red"): str(solution["T WP5 IN"]) + "°C",
+        (18.4, 6.1, "blue"): str(solution["T WP5 OUT"]) + "°C",
         # WP6
-        (17.6, 6.1, "red"): str(solution["T WP4 IN"]) + "°C",
-        (16.4, 6.1, "blue"): str(solution["T WP4 OUT"]) + "°C",
+        (17.6, 6.1, "red"): str(solution["T WP6 IN"]) + "°C",
+        (16.4, 6.1, "blue"): str(solution["T WP6 OUT"]) + "°C",
     }
+    if WP7_8_9_checkbox:
+        temperaturen.update({
+        # WP7
+        (14.3, 3.7, "red"): str(solution["T WP7 IN"]) + "°C",
+        (14.3, 4.3, "blue"): str(solution["T WP7 OUT"]) + "°C",
+        # WP8
+        (15.7, 3.7, "red"): str(solution["T WP8 IN"]) + "°C",
+        (15.7, 4.3, "blue"): str(solution["T WP8 OUT"]) + "°C",
+        # WP9
+        (15.4, 3.1, "red"): str(solution["T WP9 IN"]) + "°C",
+        (14.6, 3.1, "blue"): str(solution["T WP9 OUT"]) + "°C",
+        })
     drempel = 10
     for (x, y, letter_color), temp in temperaturen.items():
         waarde = float(temp.replace("°C", ""))  # Extract waarde uit string
@@ -321,7 +360,7 @@ def teken_schema(solution):
             #letter_color = "red"
         #rect = patches.Rectangle((x - kader_grootte / 2, y - 0.2), kader_grootte, kader_grootte, color=facecolor, ec=edgecolor)
         #ax.add_patch(rect)
-        ax.text(x, y, temp, ha="center", va="center", fontsize=kader_grootte*schaal_factor, fontweight="bold",color=letter_color)
+        ax.text(x, y, temp, ha="center", va="center", fontsize=kader_grootte*schaal_factor+3, fontweight="bold",color=letter_color)
 
     # 🔧 **Lay-out instellingen**
 
@@ -337,6 +376,23 @@ def teken_schema(solution):
 ###### INPUT PARAMETERS/AANNAMES #################
 ##################################################
 
+### VISUALISATIE INPUT
+with st.expander("Gegevens invoeren"):
+    col1, col2 = st.columns(2)
+
+    with col1:
+        T_imec = st.number_input("Temperatuur IMEC", value=21.8, step=0.1)
+    with col2:
+        debiet_backbone = st.slider("Volumedebiet backbone [m^3/h]", 20, 80, value=70)
+
+
+    col3, col4 = st.columns(2)
+    with col3:
+        model_WP = st.selectbox("COP-model", ["fixed", "model2"])
+        WP7_8_9_checkbox = st.checkbox("Warmtepomp 7-8-9", value=True)
+    with col4:
+        if model_WP == "fixed":
+            COP_fixed = st.number_input("Fixed Value:", min_value=1.0, max_value=10.0, value=4.0, step=0.1)
 ### WARMTEWISSELAAR
 type_WW = 'tegenstroom'
 A = 50  # m²
@@ -344,10 +400,6 @@ U = 3000  # W/m²·K
 
 
 ### WARMTEPOMPEN
-model_WP = st.selectbox("COP-model", ["fixed", "model2"])
-#model_WP = "fixed"
-COP_fixed = 4
-
 max_heat_demand_WP_1 = 250000  # W
 percentage_WP_1 = 0.70
 T_hot_out_WP_1 = 50 #°C
@@ -358,8 +410,6 @@ T_hot_out_WP_2 = 40 #°C
 
 ### FLUIDS
 #T_imec = 21.8
-T_imec = st.number_input("Temperatuur IMEC",value=21.8,step=0.1)
-debiet_backbone = st.slider("Volumedebiet backbone [m^3/h]", 20, 80, value=70)
 debiet_imec = 60 #m3/h
 #debiet_backbone = 50 #m3/h
 dichtheid_fluid_imec = 997 #kg/m3
@@ -392,8 +442,6 @@ if round(X_WP1 + X_WP2 + X_WP3 + X_WP4 + X_WP5 + X_WP6 + X_WP7 + X_WP8 + X_WP9,1
 else:
     print("Massafracties door warmtepompen zijn samen niet gelijk aan 1")
     exit()
-
-WP3_checkbox = st.checkbox("Warmtepomp 3")
 
 ### ALGEMENE WERKING SCRIPT
 initial_guess_T_WW_in = 7
@@ -438,14 +486,19 @@ solution["T WP5 IN"] = 0
 solution["T WP5 OUT"] = 0
 solution["T WP6 IN"] = 0
 solution["T WP6 OUT"] = 0
-
+solution["T WP7 IN"] = 0
+solution["T WP7 OUT"] = 0
+solution["T WP8 IN"] = 0
+solution["T WP8 OUT"] = 0
+solution["T WP9 IN"] = 0
+solution["T WP9 OUT"] = 0
 
 
 leiding_dikte = 2  # Dikte van leidingen
 kader_grootte = 0.5  # Grootte temperatuurkaders
 wp_grootte = 1  # Warmtepomp-grootte
-schaal_factor = 30
-st.title("Warmtenet Visualisatie")
+schaal_factor = 25
+st.title("WARMTENET")
 st.pyplot(teken_schema(solution))
 
 #         streamlit run Main.py
