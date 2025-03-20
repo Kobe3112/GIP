@@ -102,6 +102,10 @@ def T_daling_leiding(begin_Temperatuur,lengte,massadebiet):
 
     if massadebiet == 0:
         return 0
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5a75ba1 (toevoeging warmtepomp 7,8 en 9 (WP7_8_9_checkbox om aan/uit te zetten))
     # neem constante snelheid aan doorheen de buizen
     pipe_diameter = math.sqrt((4*massadebiet)/(math.pi*dichtheid_fluid_backbone*flowspeed_backbone))
 
@@ -129,7 +133,6 @@ def T_daling_leiding(begin_Temperatuur,lengte,massadebiet):
         T_diff = q / (Cp_fluid_backbone * massadebiet)
         T_diff_tot = T_diff_tot + T_diff
         T_in = T_in - T_diff
-        print(T_in)
     return T_diff_tot
 
 def T_daling_totaal(T_1):
