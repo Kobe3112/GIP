@@ -1,8 +1,7 @@
 import math
-#import streamlit as st
-#import matplotlib.pyplot as plt
-#import matplotlib.patches as patches
-import random
+import streamlit as st
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 
 #################################################
@@ -88,16 +87,6 @@ def T_daling_leiding(begin_Temperatuur,lengte,massadebiet):
     q = (begin_Temperatuur - T_ground) / R_tot
 
     return (lengte*q)/(Cp_fluid_backbone*massadebiet)
-
-def T_daling_leiding(begin_Temperatuur):
-    if begin_Temperatuur>20:
-        return 1
-    elif begin_Temperatuur>15:
-        return 0.5 + random.uniform(-0.01,0.01)
-    elif begin_Temperatuur>10:
-        return 0
-    else:
-        return -0.5
 
 def T_daling_totaal(T_1):
     global T_I1
@@ -542,6 +531,7 @@ with st.expander("Gegevens invoeren"):
     with col4:
         if model_WP == "fixed":
             COP_fixed = st.number_input("Fixed Value:", min_value=1.0, max_value=10.0, value=4.0, step=0.1)
+
 ### WARMTEWISSELAAR
 type_WW = 'tegenstroom'
 A = 50  # m²
@@ -574,10 +564,7 @@ percentage_WP_6 = 0.70
 T_hot_out_WP_6 = 40 #°C
 
 ### FLUIDS
-#T_imec = 21.8
 debiet_imec = 60 #m3/h
-
-debiet_backbone = 70 #m3/h
 
 dichtheid_fluid_imec = 997 #kg/m3
 dichtheid_fluid_backbone = 997 #kg/m3
@@ -670,19 +657,11 @@ def show_solution():
     P_compressor_WP_sorted = dict(sorted(P_compressor_WP.items()))
     for WP, value in P_compressor_WP_sorted.items():
         print("*",f"{WP}: {round(value/1000)}","kW")
-#show_solution()
+show_solution()
 ####################################
 ###### SOLUTION VISUAL ############# ==> IN PROGRESS, NOG NIKS VAN AANTREKKEN
 ####################################
 
-solution["T WP3 IN"] = 0
-solution["T WP3 OUT"] = 0
-solution["T WP4 IN"] = 0
-solution["T WP4 OUT"] = 0
-solution["T WP5 IN"] = 0
-solution["T WP5 OUT"] = 0
-solution["T WP6 IN"] = 0
-solution["T WP6 OUT"] = 0
 solution["T WP7 IN"] = 0
 solution["T WP7 OUT"] = 0
 solution["T WP8 IN"] = 0
