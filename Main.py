@@ -825,4 +825,3 @@ st.title("WARMTENET")
 st.pyplot(teken_schema(solution))
 
 #         streamlit run Main.py
-
