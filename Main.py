@@ -1,15 +1,12 @@
 import math
-<<<<<<< .merge_file_SmKy3y
 import streamlit as st
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-=======
 #import streamlit as st
 #import matplotlib.pyplot as plt
 #import matplotlib.patches as patches
 import random
 import pygfunction as gt
->>>>>>> .merge_file_J3HEtn
 
 
 #################################################
