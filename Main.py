@@ -2,10 +2,6 @@ import math
 import streamlit as st
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-#import streamlit as st
-#import matplotlib.pyplot as plt
-#import matplotlib.patches as patches
-import random
 import pygfunction as gt
 
 
@@ -745,8 +741,6 @@ L_9_10 = L_7_8  # m
 
 ### WARMTEPOMPEN DEBIETEN
 
-WP7_8_9_checkbox = False
-
 if WP7_8_9_checkbox:
     X_WP1 = 0.2
     X_WP2 = 0.1
@@ -809,13 +803,6 @@ show_solution()
 ###### SOLUTION VISUAL ############# ==> IN PROGRESS, NOG NIKS VAN AANTREKKEN
 ####################################
 
-solution["T WP7 IN"] = 0
-solution["T WP7 OUT"] = 0
-solution["T WP8 IN"] = 0
-solution["T WP8 OUT"] = 0
-solution["T WP9 IN"] = 0
-solution["T WP9 OUT"] = 0
-
 
 leiding_dikte = 2  # Dikte van leidingen
 kader_grootte = 0.5  # Grootte temperatuurkaders
@@ -825,4 +812,3 @@ st.title("WARMTENET")
 st.pyplot(teken_schema(solution))
 
 #         streamlit run Main.py
-
