@@ -468,8 +468,8 @@ def teken_schema(solution):
         ((20.9, 7.1), (20.9, 6), "blue"),
         ((21.1, 6.9), (21.1, 6), "red"),
         # naar WP 5
-        ((18.9, 7.1), (18.9, 6), "blue"),
-        ((19.1, 6.9), (19.1, 6), "red"),
+        ((18.9, 7.1), (18.9, 5.5), "blue"),
+        ((19.1, 6.9), (19.1, 5.5), "red"),
         # naar WP 6
         ((16.9, 7.1), (16.9, 6), "blue"),
         ((17.1, 6.9), (17.1, 6), "red"),
@@ -484,14 +484,14 @@ def teken_schema(solution):
             ((14.9, 7.1), (14.9, 4), "blue"),
             ((15.1, 6.9), (15.1, 4), "red"),
             # naar WP 9
-            ((14.9, 4), (14.9, 3), "blue"),
-            ((15.1, 4), (15.1, 3), "red"),
+            ((14.9, 4), (14.9, 2.5), "blue"),
+            ((15.1, 4), (15.1, 2.5), "red"),
             # naar WP 8
-            ((14.9, 4.1), (16, 4.1), "blue"),
-            ((15.1, 3.9), (16, 3.9), "red"),
+            ((14.9, 4.1), (16.5, 4.1), "blue"),
+            ((15.1, 3.9), (16.5, 3.9), "red"),
             # naar WP 7
-            ((14.9, 4.1), (14, 4.1), "blue"),
-            ((15.1, 3.9), (14, 3.9), "red"),
+            ((14.9, 4.1), (13.5, 4.1), "blue"),
+            ((15.1, 3.9), (13.5, 3.9), "red"),
         ])
 
     for (start, eind, color) in leidingen:
@@ -508,12 +508,12 @@ def teken_schema(solution):
     pos_WP2 = (21,1.5)
     pos_WP3 = (27.5,6)
     pos_WP4 = (21,5.5)
-    pos_WP5 = (19,5.5)
+    pos_WP5 = (19,5)
     pos_WP6 = (17,5.5)
     if WP7_8_9_checkbox:
-        pos_WP7 = (13.5,4)
-        pos_WP8 = (16.5,4)
-        pos_WP9 = (15,2.5)
+        pos_WP7 = (13,4)
+        pos_WP8 = (17,4)
+        pos_WP9 = (15,2)
 
 
 
@@ -557,40 +557,40 @@ def teken_schema(solution):
     # 🔲 **Temperatuurkaders**
     temperaturen = {
         #WW
-        (28.3, 3.4, "orange"): str(round(T_imec,2)) + "°C",
-        (28.3, 2.6, "purple"): str(solution["T naar Dijle"]) + "°C",
-        (26.7, 3.4, "red"): str(solution["T WARMTEWISSELAAR OUT"]) + "°C",
-        (26.7, 2.6, "blue"): str(solution["T WARMTEWISSELAAR IN"]) + "°C",
+        (28.4, 3.4, "orange"): str(round(T_imec,2)) + "°C",
+        (28.4, 2.6, "purple"): str(solution["T naar Dijle"]) + "°C",
+        (26.5, 3.4, "red"): str(solution["T WARMTEWISSELAAR OUT"]) + "°C",
+        (26.5, 2.6, "blue"): str(solution["T WARMTEWISSELAAR IN"]) + "°C",
         # WP1
-        (23.6, 3.9, "red"): str(solution["T WP1 IN"]) + "°C",
-        (22.4, 3.9, "blue"): str(solution["T WP1 OUT"]) + "°C",
+        (23.65, 3.9, "red"): str(solution["T WP1 IN"]) + "°C",
+        (22.35, 3.9, "blue"): str(solution["T WP1 OUT"]) + "°C",
         # WP2
-        (20.4, 2.1, "red"): str(solution["T WP2 IN"]) + "°C",
-        (21.6, 2.1, "blue"): str(solution["T WP2 OUT"]) + "°C",
+        (20.35, 2.1, "red"): str(solution["T WP2 IN"]) + "°C",
+        (21.65, 2.1, "blue"): str(solution["T WP2 OUT"]) + "°C",
         # WP3
-        (26.8, 6.4, "red"): str(solution["T WP3 IN"]) + "°C",
-        (26.8, 5.6, "blue"): str(solution["T WP3 OUT"]) + "°C",
+        (26.6, 6.4, "red"): str(solution["T WP3 IN"]) + "°C",
+        (26.6, 5.6, "blue"): str(solution["T WP3 OUT"]) + "°C",
         # WP4
-        (21.6, 6.1, "red"): str(solution["T WP4 IN"]) + "°C",
-        (20.4, 6.1, "blue"): str(solution["T WP4 OUT"]) + "°C",
+        (21.65, 6.1, "red"): str(solution["T WP4 IN"]) + "°C",
+        (20.35, 6.1, "blue"): str(solution["T WP4 OUT"]) + "°C",
         # WP5
-        (19.6, 6.1, "red"): str(solution["T WP5 IN"]) + "°C",
-        (18.4, 6.1, "blue"): str(solution["T WP5 OUT"]) + "°C",
+        (19.65, 5.6, "red"): str(solution["T WP5 IN"]) + "°C",
+        (18.35, 5.6, "blue"): str(solution["T WP5 OUT"]) + "°C",
         # WP6
-        (17.6, 6.1, "red"): str(solution["T WP6 IN"]) + "°C",
-        (16.4, 6.1, "blue"): str(solution["T WP6 OUT"]) + "°C",
+        (17.65, 6.1, "red"): str(solution["T WP6 IN"]) + "°C",
+        (16.35, 6.1, "blue"): str(solution["T WP6 OUT"]) + "°C",
     }
     if WP7_8_9_checkbox:
         temperaturen.update({
         # WP7
-        (14.3, 3.7, "red"): str(solution["T WP7 IN"]) + "°C",
-        (14.3, 4.3, "blue"): str(solution["T WP7 OUT"]) + "°C",
+        (14.0, 3.7, "red"): str(solution["T WP7 IN"]) + "°C",
+        (14.0, 4.3, "blue"): str(solution["T WP7 OUT"]) + "°C",
         # WP8
-        (15.7, 3.7, "red"): str(solution["T WP8 IN"]) + "°C",
-        (15.7, 4.3, "blue"): str(solution["T WP8 OUT"]) + "°C",
+        (16, 3.7, "red"): str(solution["T WP8 IN"]) + "°C",
+        (16, 4.3, "blue"): str(solution["T WP8 OUT"]) + "°C",
         # WP9
-        (15.4, 3.1, "red"): str(solution["T WP9 IN"]) + "°C",
-        (14.6, 3.1, "blue"): str(solution["T WP9 OUT"]) + "°C",
+        (15.7, 2.6, "red"): str(solution["T WP9 IN"]) + "°C",
+        (14.35, 2.6, "blue"): str(solution["T WP9 OUT"]) + "°C",
         })
     drempel = 10
     for (x, y, letter_color), temp in temperaturen.items():
