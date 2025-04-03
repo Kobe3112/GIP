@@ -3,11 +3,16 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import pygfunction as gt
-from scipy.linalg import lstsq
-from collections import defaultdict
+import pandas as pd
+import plotly.express as px
 import numpy as np
-import time
 from datetime import datetime
+import time
+import plotly.graph_objects as go
+from collections import defaultdict
+import matplotlib.colors as mcolors
+from scipy.linalg import lstsq
+import sys
 
 st.markdown(
     """
@@ -58,6 +63,10 @@ def T_daling_warmtepomp(WP, T_in):
         selected_model = warmtepompen[WP]["selected_model"]
         COP, P_compressor = bereken_variabele_COP_en_P(T_in_source, T_req_building, selected_model, WP)
         warmtepompen[WP]["COP"] = COP
+        if selected_model == "Viessmann_biquadratic":
+            warmtepompen[WP]["COP_Viessmann_biquadratic"] = COP
+        if selected_model == "Viessmann_bilinear":
+            warmtepompen[WP]["COP_Viessmann_bilinear"] = COP
         warmtepompen[WP]["P_compressor"] = P_compressor
         Q_building = COP * P_compressor
         warmtepompen[WP]["Q_building"] = Q_building
@@ -112,7 +121,7 @@ def bereken_variabele_COP_en_P(T_in, T_out, model, WP):
 
         return COP, P
 
-    if fit == "biquadratic":
+    elif fit == "biquadratic":
 
         X = np.column_stack([
             np.ones_like(T_in_data),
@@ -137,6 +146,8 @@ def bereken_variabele_COP_en_P(T_in, T_out, model, WP):
             G_COP*T_in**2*T_out + H_COP*T_in*T_out**2 + I_COP*T_in**2*T_out**2
 
         return COP, P
+    else:
+        sys.exit()
 
 def T_daling_leiding(begin_Temperatuur,lengte,massadebiet):
 
@@ -493,13 +504,13 @@ def teken_schema(solution):
     # 🏭 **Leidingen**
     leidingen = [
         # naar WW
-        ((30, 2.9), (28, 2.9),"purple"),
+        ((30, 2.9), (29, 2.9),"purple"),
         ((30, 2.9), (30, 1), "purple"),
-        ((30, 3.1), (28, 3.1),"orange"),
-        ((30, 3.1), (30, 7), "orange"),
+        ((30, 3.1), (29, 3.1),"orange"),
+        ((30, 3.1), (30, 6), "orange"),
         # vertrek uit WW
-        ((27, 3.1), (25, 3.1),"red"),
-        ((27, 2.9), (25, 2.9),"blue"),
+        ((28, 3.1), (25, 3.1),"red"),
+        ((28, 2.9), (25, 2.9),"blue"),
         # naar links
         ((25, 3.1), (23, 3.1),"red"),
         ((25, 2.9), (23, 2.9),"blue"),
@@ -533,6 +544,11 @@ def teken_schema(solution):
         # naar WP 6
         ((16.9, 7.1), (16.9, 6), "blue"),
         ((17.1, 6.9), (17.1, 6), "red"),
+        # naar WP 10
+        ((26.5, 2.9), (26.5, 3.7), "blue"),
+        ((26.3, 3.1), (26.3, 3.7), "red"),
+        # return
+        ((27.2, 3.1), (27.2, 2.9), "gradient")
 
     ]
     if WP7_8_9_checkbox:
@@ -555,13 +571,33 @@ def teken_schema(solution):
         ])
 
     for (start, eind, color) in leidingen:
-        ax.plot([start[0], eind[0]], [start[1], eind[1]], color=color, linewidth=leiding_dikte)
+        if color == "gradient":  # Speciale handling voor kleurverloop
+            x = np.full(100, start[0])  # x blijft constant (verticale lijn)
+            y = np.linspace(start[1], eind[1], 100)  # Opdelen in kleine segmenten
+
+            # Maak een kleurverloop van rood naar blauw
+            colors = [mcolors.to_rgba(c) for c in ["red", "blue"]]
+            cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", colors)
+
+            for i in range(len(y) - 1):
+                ax.plot([x[i], x[i]], [y[i], y[i + 1]], color=cmap(i / len(y)), linewidth=leiding_dikte)
+
+        else:
+            ax.plot([start[0], eind[0]], [start[1], eind[1]], color=color, linewidth=leiding_dikte)
+
 
     # ⚙️ **Warmtewisselaar**
-    ww = patches.Circle((27.5, 3), radius=wp_grootte / 2, color="green", ec="black")
+    ww = patches.Circle((28.5, 3), radius=wp_grootte / 2, color="green", ec="black")
     ax.add_patch(ww)
-    ax.text(27.5, 3, "WW", ha="center", va="center", fontsize=wp_grootte * schaal_factor, fontweight="bold")
+    ax.text(28.5, 3, "WW", ha="center", va="center", fontsize=wp_grootte * schaal_factor, fontweight="bold")
 
+    imec = patches.Rectangle((29.25, 6), height=0.7, width=1.5, color="orange", ec="black")
+    ax.add_patch(imec)
+    ax.text(30, 6.35, "IMEC", ha="center", va="center", fontsize=wp_grootte * schaal_factor, fontweight="bold")
+
+    dijle = patches.Rectangle((29.25, 1), height=0.7, width=1.5, color="purple", ec="black")
+    ax.add_patch(dijle)
+    ax.text(30, 1.35, "DIJLE", ha="center", va="center", fontsize=wp_grootte * schaal_factor, fontweight="bold")
 
     # ⚙️ **Warmtepomp**
     pos_WP1 = (23,4.5)
@@ -574,6 +610,7 @@ def teken_schema(solution):
         pos_WP7 = (13,4)
         pos_WP8 = (17,4)
         pos_WP9 = (15,2)
+    pos_WP10 = (26.4,4.2)
 
 
 
@@ -601,6 +638,10 @@ def teken_schema(solution):
     ax.add_patch(WP6)
     ax.text(pos_WP6[0], pos_WP6[1], "WP6", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
             fontweight="bold")
+    WP10 = patches.Circle(pos_WP10, radius=wp_grootte / 2, color="green", ec="black")
+    ax.add_patch(WP10)
+    ax.text(pos_WP10[0], pos_WP10[1], "WP10", ha="center", va="center", fontsize=wp_grootte * schaal_factor,
+            fontweight="bold")
     if WP7_8_9_checkbox:
         WP7 = patches.Circle(pos_WP7, radius=wp_grootte / 2, color="green", ec="black")
         ax.add_patch(WP7)
@@ -617,10 +658,10 @@ def teken_schema(solution):
     # 🔲 **Temperatuurkaders**
     temperaturen = {
         #WW
-        (28.4, 3.4, "orange"): str(round(T_imec,2)) + "°C",
-        (28.4, 2.6, "purple"): str(solution["T naar Dijle"]) + "°C",
-        (26.5, 3.4, "red"): str(solution["T WARMTEWISSELAAR OUT"]) + "°C",
-        (26.5, 2.6, "blue"): str(solution["T WARMTEWISSELAAR IN"]) + "°C",
+        (29.4, 3.3, "orange"): str(round(T_imec,2)) + "°C",
+        (29.4, 2.7, "purple"): str(solution["T naar Dijle"]) + "°C",
+        (27.5, 3.3, "red"): str(solution["T WARMTEWISSELAAR OUT"]) + "°C",
+        (27.5, 2.7, "blue"): str(solution["T WARMTEWISSELAAR IN"]) + "°C",
         # WP1
         (23.65, 3.9, "red"): str(solution["T WP1 IN"]) + "°C",
         (22.35, 3.9, "blue"): str(solution["T WP1 OUT"]) + "°C",
@@ -639,6 +680,9 @@ def teken_schema(solution):
         # WP6
         (17.65, 6.1, "red"): str(solution["T WP6 IN"]) + "°C",
         (16.35, 6.1, "blue"): str(solution["T WP6 OUT"]) + "°C",
+        # WP10
+        (25.8, 3.6, "red"): str(solution["T WP10 IN"]) + "°C",
+        (27, 3.6, "blue"): str(solution["T WP10 OUT"]) + "°C",
     }
     if WP7_8_9_checkbox:
         temperaturen.update({
@@ -683,7 +727,7 @@ def teken_schema(solution):
 ###### INPUT PARAMETERS/AANNAMES #################
 ##################################################
 
-modellen = ["Viessmann_bilinear", "Viessmann_biquadratic", "Daikin_bilinear", "Daikin_biquadratic"]
+modellen = ["Viessmann_bilinear", "Viessmann_biquadratic","Daikin_bilinear", "Daikin_biquadratic"]
 
 ### VISUALISATIE INPUT
 progress_bar = st.progress(0)
@@ -837,52 +881,52 @@ HP_data["Daikin"]["T_max"] = 45
 
 # WP1
 T_req_building_WP1 = 50  # °C
-Q_req_building_WP1 = 250000  # W
+Q_req_building_WP1 = 200000  # W
 percentage_WP1 = 0.70
 
 # WP2
 T_req_building_WP2 = 50  # °C
-Q_req_building_WP2 = 250000  # W
+Q_req_building_WP2 = 200000  # W
 percentage_WP2 = 0.70
 
 # WP3
 T_req_building_WP3 = 50  # °C
-Q_req_building_WP3 = 250000  # W
+Q_req_building_WP3 = 200000  # W
 percentage_WP3 = 0.70
 
 # WP4
 T_req_building_WP4 = 50  # °C
-Q_req_building_WP4 = 250000  # W
+Q_req_building_WP4 = 200000  # W
 percentage_WP4 = 0.70
 
 # WP5
 T_req_building_WP5 = 50  # °C
-Q_req_building_WP5 = 250000  # W
+Q_req_building_WP5 = 200000  # W
 percentage_WP5 = 0.70
 
 # WP6
 T_req_building_WP6 = 50  # °C
-Q_req_building_WP6 = 250000  # W
+Q_req_building_WP6 = 200000  # W
 percentage_WP6 = 0.70
 
 # WP7
 T_req_building_WP7 = 50  # °C
-Q_req_building_WP7 = 250000  # W
+Q_req_building_WP7 = 200000  # W
 percentage_WP7 = 0.70
 
 # WP8
 T_req_building_WP8 = 50  # °C
-Q_req_building_WP8 = 250000  # W
+Q_req_building_WP8 = 200000  # W
 percentage_WP8 = 0.70
 
 # WP9
 T_req_building_WP9 = 50  # °C
-Q_req_building_WP9 = 250000  # W
+Q_req_building_WP9 = 200000  # W
 percentage_WP9 = 0.70
 
 # WP10
 T_req_building_WP10 = 50  # °C
-Q_req_building_WP10 = 250000  # W
+Q_req_building_WP10 = 200000  # W
 percentage_WP10 = 0.70
 
 ### FLUIDS
@@ -980,6 +1024,9 @@ aantal_cijfers_na_komma = 2
 ###################################
 ##### warmtepompen dictionary #####
 ###################################
+#warmtepompen["WP1"]["COP_Viessmann_biquadratic"] = 'not defined'
+#warmtepompen["WP1"]["COP_Viessmann_bilineair"] = 'not defined'
+
 
 parameters = ["selected_model","delta_T","m","T_in_source","T_out_source","T_building","T_req_building","Q_building","Q_req_building", "percentage", "P_compressor"]
 for i in range(1, 11):
@@ -1028,4 +1075,328 @@ schaal_factor = 25
 st.title("WARMTENET")
 st.pyplot(teken_schema(solution))
 
+zoek_waarde = st.toggle("Zoek waarde", value=False)
+
+if zoek_waarde:
+    # Kader
+    with st.container():
+        st.markdown("#### Selecteer opties:")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            selected_wp = st.selectbox("Kies een warmtepomp:", list(warmtepompen.keys()))
+
+        # Dynamisch ophalen van eigenschappen die alleen bij de geselecteerde warmtepomp horen
+        beschikbare_eigenschappen = list(warmtepompen[selected_wp].keys())
+
+        with col2:
+            selected_property = st.selectbox("Kies een eigenschap:", beschikbare_eigenschappen)
+
+        # Output in hetzelfde kader
+        st.markdown(f"**{selected_property} van {selected_wp}:**")
+        st.info(f"{warmtepompen[selected_wp][selected_property]}")  # Mooie opmaak voor output
+
+    st.divider()  # Voegt een scheidingslijn toe
+
+for WP in warmtepompen:
+    warmtepompen[WP]['T in'] = warmtepompen[WP]['T_in_source']
+for WP in warmtepompen:
+    warmtepompen[WP]['T out'] = warmtepompen[WP]['T_out_source']
+
+warmtepompen['WP1']['Q_boiler'] = warmtepompen['WP1']['Q_req_building'] - warmtepompen['WP1']['Q_building']
+warmtepompen['WP2']['Q_boiler'] = warmtepompen['WP2']['Q_req_building'] - warmtepompen['WP2']['Q_building']
+warmtepompen['WP3']['Q_boiler'] = warmtepompen['WP3']['Q_req_building'] - warmtepompen['WP3']['Q_building']
+warmtepompen['WP4']['Q_boiler'] = warmtepompen['WP4']['Q_req_building'] - warmtepompen['WP4']['Q_building']
+warmtepompen['WP5']['Q_boiler'] = warmtepompen['WP5']['Q_req_building'] - warmtepompen['WP5']['Q_building']
+warmtepompen['WP6']['Q_boiler'] = warmtepompen['WP6']['Q_req_building'] - warmtepompen['WP6']['Q_building']
+warmtepompen['WP7']['Q_boiler'] = warmtepompen['WP7']['Q_req_building'] - warmtepompen['WP7']['Q_building']
+warmtepompen['WP8']['Q_boiler'] = warmtepompen['WP8']['Q_req_building'] - warmtepompen['WP8']['Q_building']
+warmtepompen['WP9']['Q_boiler'] = warmtepompen['WP9']['Q_req_building'] - warmtepompen['WP9']['Q_building']
+warmtepompen['WP10']['Q_boiler'] = warmtepompen['WP10']['Q_req_building'] - warmtepompen['WP10']['Q_building']
+
+warmtepompen['WP1']['T_boiler'] = warmtepompen['WP1']['T_req_building'] - warmtepompen['WP1']['T_building']
+warmtepompen['WP2']['T_boiler'] = warmtepompen['WP2']['T_req_building'] - warmtepompen['WP2']['T_building']
+warmtepompen['WP3']['T_boiler'] = warmtepompen['WP3']['T_req_building'] - warmtepompen['WP3']['T_building']
+warmtepompen['WP4']['T_boiler'] = warmtepompen['WP4']['T_req_building'] - warmtepompen['WP4']['T_building']
+warmtepompen['WP5']['T_boiler'] = warmtepompen['WP5']['T_req_building'] - warmtepompen['WP5']['T_building']
+warmtepompen['WP6']['T_boiler'] = warmtepompen['WP6']['T_req_building'] - warmtepompen['WP6']['T_building']
+warmtepompen['WP7']['T_boiler'] = warmtepompen['WP7']['T_req_building'] - warmtepompen['WP7']['T_building']
+warmtepompen['WP8']['T_boiler'] = warmtepompen['WP8']['T_req_building'] - warmtepompen['WP8']['T_building']
+warmtepompen['WP9']['T_boiler'] = warmtepompen['WP9']['T_req_building'] - warmtepompen['WP9']['T_building']
+warmtepompen['WP10']['T_boiler'] = warmtepompen['WP10']['T_req_building'] - warmtepompen['WP10']['T_building']
+data = {
+    'WP': ['WP1', 'WP2', 'WP3', 'WP4', 'WP5', 'WP6'],
+    'T WP in (bron) [°C]': [
+        str(warmtepompen['WP1']['T in']), str(warmtepompen['WP2']['T in']), str(warmtepompen['WP3']['T in']),
+        str(warmtepompen['WP4']['T in']), str(warmtepompen['WP5']['T in']), str(warmtepompen['WP6']['T in'])
+    ],
+    'T WP out (bron) [°C]': [
+        str(warmtepompen['WP1']['T out']), str(warmtepompen['WP2']['T out']), str(warmtepompen['WP3']['T out']),
+        str(warmtepompen['WP4']['T out']), str(warmtepompen['WP5']['T out']), str(warmtepompen['WP6']['T out'])
+    ],
+    'debiet [m^3/h]' : [
+        str(warmtepompen['WP1']['m']), str(warmtepompen['WP2']['m']), str(warmtepompen['WP3']['m']),
+        str(warmtepompen['WP4']['m']), str(warmtepompen['WP5']['m']), str(warmtepompen['WP6']['m'])
+    ],
+    '\u0394T bron [°C]' : [
+        str(warmtepompen['WP1']['delta_T']), str(warmtepompen['WP2']['delta_T']), str(warmtepompen['WP3']['delta_T']),
+        str(warmtepompen['WP4']['delta_T']), str(warmtepompen['WP5']['delta_T']), str(warmtepompen['WP6']['delta_T'])
+    ]
+}
+
+if model_WP == 'variabel':
+    data['Model'] = [
+        selected_model_WP1, selected_model_WP2, selected_model_WP3,
+        selected_model_WP4, selected_model_WP5, selected_model_WP6
+    ]
+
+df = pd.DataFrame(data)
+
+if WP7_8_9_checkbox:
+    wp789_data = {
+        'WP': ['WP7', 'WP8', 'WP9'],
+        'T WP in (bron) [°C]': [
+            str(warmtepompen['WP7']['T in']), str(warmtepompen['WP8']['T in']), str(warmtepompen['WP9']['T in'])
+        ],
+        'T WP out (bron) [°C]': [
+            str(warmtepompen['WP7']['T out']), str(warmtepompen['WP8']['T out']), str(warmtepompen['WP9']['T out'])
+        ],
+        'debiet [m^3/h]': [
+            str(warmtepompen['WP7']['m']), str(warmtepompen['WP8']['m']), str(warmtepompen['WP9']['m'])
+        ],
+        '\u0394T bron [°C]' : [
+        str(warmtepompen['WP7']['delta_T']), str(warmtepompen['WP8']['delta_T']), str(warmtepompen['WP9']['delta_T'])
+        ]
+
+    }
+    if model_WP == 'variabel':
+        wp789_data['Model'] = [
+            selected_model_WP7, selected_model_WP8, selected_model_WP9
+        ]
+
+    wp789_df = pd.DataFrame(wp789_data)
+    df = pd.concat([df, wp789_df], ignore_index=True)
+
+wp10_data = {
+    'WP': ['WP10'],
+    'T WP in (bron) [°C]': [
+        str(warmtepompen['WP10']['T in'])
+    ],
+    'T WP out (bron) [°C]': [
+        str(warmtepompen['WP10']['T out'])
+    ],
+    'debiet [m^3/h]' : [
+        str(warmtepompen['WP10']['m'])
+    ],
+    '\u0394T bron [°C]' : [
+        str(warmtepompen['WP10']['delta_T'])
+    ]
+
+}
+if model_WP == 'variabel':
+    wp10_data['Model'] = [selected_model_WP10]
+
+wp10_df = pd.DataFrame(wp10_data)
+df = pd.concat([df, wp10_df], ignore_index=True)
+
+desired_order = ['T WP in (bron) [°C]', 'T WP out (bron) [°C]']
+if '\u0394T bron [°C]' in df.columns:
+    desired_order.append('\u0394T bron [°C]')
+desired_order.append('debiet [m^3/h]')
+if 'Model' in df.columns:
+    desired_order.append('Model')
+df.set_index('WP', inplace=True)
+df = df[desired_order]
+st.dataframe(df,use_container_width=True)
+
+###############
+#df_transposed = df.transpose()
+#st.dataframe(df_transposed,use_container_width=True)
+#st.markdown(
+#    df.style.set_properties(**{'text-align': 'center'}).to_html(),
+#    unsafe_allow_html=True
+#)
+###############
+
+def teken_grafiek():
+    # Initialiseer session_state voor tijd en data als ze nog niet bestaan
+    if 'tijd' not in st.session_state:
+        st.session_state['tijd'] = []
+    if 'T_WP1_IN_values' not in st.session_state:
+        st.session_state['T_WP1_IN_values'] = []
+
+    # Creëer een placeholder voor de grafiek zonder sleutel
+    graph_placeholder = st.empty()
+
+    # Zet een starttijd voor de grafiek
+    start_time = time.time()
+
+    # Maak de figuur
+    fig = go.Figure()
+
+    # Voeg de eerste lijn toe (om de grafiek te initiëren)
+    fig.add_trace(go.Scatter(
+        x=st.session_state['tijd'],
+        y=st.session_state['T_WP1_IN_values'],
+        mode='lines+markers',
+        name='T WP1 IN',
+        line=dict(color='blue')
+    ))
+
+    # Titels en labels toevoegen
+    fig.update_layout(
+        title="Live data van T WP1 IN",
+        xaxis_title="Tijd",
+        yaxis_title="Temperatuur [°C]",
+        template='plotly_dark',
+        xaxis=dict(tickformat="%H:%M:%S")  # Dit format geeft tijd weer in uur:minuut:seconde
+    )
+
+    # Toon de grafiek voor het eerst zonder `plotly_chart` aan te roepen
+    graph_placeholder.plotly_chart(fig, use_container_width=True, key="unique_graph_key_initial")
+
+    # Loop voor het continu updaten van de grafiek
+    while True:
+        # Verkrijg de huidige tijd
+        current_time = datetime.now()
+
+        # Voeg de tijdstap toe aan de lijst (max 1 keer per seconde)
+        if len(st.session_state['tijd']) == 0 or (time.time() - start_time >= 1):
+            st.session_state['tijd'].append(current_time)
+            start_time = time.time()  # Reset starttijd voor de volgende stap
+
+            # Controleer of de waarde van T WP1 IN is veranderd
+            if len(st.session_state['T_WP1_IN_values']) > 0 and solution['T WP1 IN'] != \
+                    st.session_state['T_WP1_IN_values'][-1]:
+                # Als de waarde is veranderd, voeg de nieuwe waarde toe
+                st.session_state['T_WP1_IN_values'].append(solution['T WP1 IN'])
+            else:
+                # Anders voeg de vorige waarde opnieuw toe (voor horizontale lijn)
+                st.session_state['T_WP1_IN_values'].append(
+                    st.session_state['T_WP1_IN_values'][-1] if len(st.session_state['T_WP1_IN_values']) > 0 else
+                    solution['T WP1 IN'])
+
+        # Voeg de nieuwe data toe aan de grafiek zonder de grafiek opnieuw te tekenen
+        fig.data[0].x = st.session_state['tijd']
+        fig.data[0].y = st.session_state['T_WP1_IN_values']
+
+        # Genereer een dynamische sleutel op basis van de huidige tijd in milliseconden (zorgt voor uniekheid)
+        dynamic_key = f"unique_graph_key_{int(datetime.now().timestamp() * 1000)}"  # Milliseconden
+
+        # Werk de grafiek bij met de nieuwe sleutel
+        graph_placeholder.plotly_chart(fig, use_container_width=True, key=dynamic_key)
+
+        # Slaap 1 seconde voor de volgende update
+        time.sleep(0.5)
+
+#teken_grafiek()
+
+
+
+warmtepompen_list = ["WP1", "WP2", "WP3", "WP4", "WP5", "WP6"]
+wp_warmte = [warmtepompen['WP1']['Q_building'],
+             warmtepompen['WP2']['Q_building'],
+             warmtepompen['WP3']['Q_building'],
+             warmtepompen['WP4']['Q_building'],
+             warmtepompen['WP5']['Q_building'],
+             warmtepompen['WP6']['Q_building']
+             ]
+boiler_warmte = [warmtepompen['WP1']['Q_boiler'],
+                 warmtepompen['WP2']['Q_boiler'],
+                 warmtepompen['WP3']['Q_boiler'],
+                 warmtepompen['WP4']['Q_boiler'],
+                 warmtepompen['WP5']['Q_boiler'],
+                 warmtepompen['WP6']['Q_boiler']
+             ]
+wp_T = [warmtepompen['WP1']['T_building'],
+             warmtepompen['WP2']['T_building'],
+             warmtepompen['WP3']['T_building'],
+             warmtepompen['WP4']['T_building'],
+             warmtepompen['WP5']['T_building'],
+             warmtepompen['WP6']['T_building']
+             ]
+boiler_T = [warmtepompen['WP1']['T_boiler'],
+                 warmtepompen['WP2']['T_boiler'],
+                 warmtepompen['WP3']['T_boiler'],
+                 warmtepompen['WP4']['T_boiler'],
+                 warmtepompen['WP5']['T_boiler'],
+                 warmtepompen['WP6']['T_boiler']
+             ]
+if WP7_8_9_checkbox:
+    warmtepompen_list.extend(["WP7", "WP8", "WP9"])
+    wp_warmte.extend([warmtepompen['WP7']['Q_building'],
+                      warmtepompen['WP8']['Q_building'],
+                      warmtepompen['WP9']['Q_building']])
+    boiler_warmte.extend([warmtepompen['WP7']['Q_boiler'],
+                          warmtepompen['WP8']['Q_boiler'],
+                          warmtepompen['WP9']['Q_boiler']])
+    wp_T.extend([warmtepompen['WP7']['T_building'],
+                warmtepompen['WP8']['T_building'],
+                warmtepompen['WP9']['T_building']])
+    boiler_T.extend([warmtepompen['WP7']['T_boiler'],
+                    warmtepompen['WP8']['T_boiler'],
+                    warmtepompen['WP9']['T_boiler']])
+
+warmtepompen_list.extend(["WP10"])
+wp_warmte.extend([warmtepompen['WP10']['Q_building']])
+boiler_warmte.extend([warmtepompen['WP10']['Q_boiler']])
+wp_warmte.extend([warmtepompen['WP10']['T_building']])
+boiler_warmte.extend([warmtepompen['WP10']['T_boiler']])
+
+fig = go.Figure()
+
+fig.add_trace(go.Bar(
+    x=warmtepompen_list,
+    y=wp_warmte,
+    name="Warmtepomp",
+    marker_color="green"
+))
+
+fig.add_trace(go.Bar(
+    x=warmtepompen_list,
+    y=boiler_warmte,
+    name="Boiler",
+    marker_color="orange"
+))
+
+# Layout instellingen
+fig.update_layout(
+    barmode="stack",  # Stapelen van staven
+    title="Warmtelevering per gebouw",
+    xaxis_title="Warmtepomp",
+    yaxis_title="Warmte [kWh]",
+    legend_title="Bron van warmte"
+)
+
+# Toon de grafiek in Streamlit
+st.plotly_chart(fig)
+
+
+fig2 = go.Figure()
+
+fig2.add_trace(go.Bar(
+    x=warmtepompen_list,
+    y=wp_T,
+    name="Warmtepomp",
+    marker_color="green"
+))
+
+fig2.add_trace(go.Bar(
+    x=warmtepompen_list,
+    y=boiler_T,
+    name="Boiler",
+    marker_color="orange"
+))
+
+# Layout instellingen
+fig2.update_layout(
+    barmode="stack",  # Stapelen van staven
+    title="Temperatuur aanvoer gebouwkant",
+    xaxis_title="Warmtepomp",
+    yaxis_title="T [°C]",
+    legend_title="Bron van T"
+)
+
+# Toon de grafiek in Streamlit
+st.plotly_chart(fig2)
 #         streamlit run Main.py
