@@ -3,95 +3,141 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import pygfunction as gt
+from scipy.linalg import lstsq
+from collections import defaultdict
+import numpy as np
+import time
+from datetime import datetime
 
+st.markdown(
+    """
+    <style>
+    .block-container {
+        max-width: 1100px;  # Pas deze waarde aan naar de gewenste breedte
+        margin: 0 auto;  # Centreer de inhoud
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
+warmtepompen = defaultdict(dict)
+HP_data = defaultdict(dict)
 
 #################################################
 ###### HIER KOMEN ALLE FUNCTIES #################
 #################################################
-def T_daling_warmtepomp(T_cold_in):
-    # T_cold_in is de T van het water die de WP binnenkomt aan de koude kant (=backbone side)
-    # T_cold_out is de T van het water die de WP uitstroomt aan de koude kant (=backbone side)
-    if T_cold_in == T_I1:
-        percentage = percentage_WP_1
-        max_heat_demand = max_heat_demand_WP_1
-        T_hot_out = T_hot_out_WP_1
-        massadebiet = m_WP_1
-        tekst = "WP1"
+def T_daling_warmtepomp(WP, T_in):
 
-    elif T_cold_in == T_I2:
-        percentage = percentage_WP_2
-        max_heat_demand = max_heat_demand_WP_2
-        T_hot_out = T_hot_out_WP_2
-        massadebiet = m_WP_2
-        tekst = "WP2"
-
-    elif T_cold_in == T_I3:
-        percentage = percentage_WP_3
-        max_heat_demand = max_heat_demand_WP_3
-        T_hot_out = T_hot_out_WP_3
-        massadebiet = m_WP_3
-        tekst = "WP3"
-
-    elif T_cold_in == T_I4:
-        percentage = percentage_WP_4
-        max_heat_demand = max_heat_demand_WP_4
-        T_hot_out = T_hot_out_WP_4
-        massadebiet = m_WP_4
-        tekst = "WP4"
-
-    elif T_cold_in == T_I5:
-        percentage = percentage_WP_5
-        max_heat_demand = max_heat_demand_WP_5
-        T_hot_out = T_hot_out_WP_5
-        massadebiet = m_WP_5
-        tekst = "WP5"
-
-    elif T_cold_in == T_I6:
-        percentage = percentage_WP_6
-        max_heat_demand = max_heat_demand_WP_6
-        T_hot_out = T_hot_out_WP_6
-        massadebiet = m_WP_6
-        tekst = "WP6"
-
-    elif T_cold_in == T_I7:
-        percentage = percentage_WP_7
-        max_heat_demand = max_heat_demand_WP_7
-        T_hot_out = T_hot_out_WP_7
-        massadebiet = m_WP_7
-        tekst = "WP7"
-
-    elif T_cold_in == T_I8:
-        percentage = percentage_WP_8
-        max_heat_demand = max_heat_demand_WP_8
-        T_hot_out = T_hot_out_WP_8
-        massadebiet = m_WP_8
-        tekst = "WP8"
-
-    elif T_cold_in == T_I9:
-        percentage = percentage_WP_9
-        max_heat_demand = max_heat_demand_WP_9
-        T_hot_out = T_hot_out_WP_9
-        massadebiet = m_WP_9
-        tekst = "WP9"
-
-    else:
-        print("Warmtepomp niet gevonden")
-        exit()
+    massadebiet = warmtepompen[WP]["m"]
+    T_in_source = T_in
+    warmtepompen[WP]["T_in_source"] = T_in_source
+    T_req_building = warmtepompen[WP]["T_req_building"]
+    Q_req_building = warmtepompen[WP]["Q_req_building"]
 
     if massadebiet == 0:
         return 0
 
-    COP = bereken_COP(T_cold_in,T_hot_out,model_WP)
-    Q_cond = percentage * max_heat_demand
-    P_compressor = Q_cond / COP
-    Q_evap = Q_cond - P_compressor
-    T_cold_out = -Q_evap / (massadebiet * Cp_fluid_backbone) + T_cold_in
-    P_compressor_WP[tekst] = P_compressor
-    return T_cold_in - T_cold_out
-def bereken_COP(T_cold_in, T_hot_out, model):
-    if model == "fixed":
-        return (COP_fixed)
+    if model_WP == "fixed":
+        warmtepompen[WP]["T_building"] = T_req_building
+        percentage = warmtepompen[WP]["percentage"]
+        COP = COP_fixed
+        warmtepompen[WP]["COP"] = COP
+        Q_building = percentage * Q_req_building
+        warmtepompen[WP]["Q_building"] = Q_building
+        P_compressor = Q_building / COP
+        warmtepompen[WP]["P_compressor"] = P_compressor
+        Q_evap = Q_building - P_compressor
+        T_out_source = -Q_evap / (massadebiet * Cp_fluid_backbone) + T_in_source
+        warmtepompen[WP]["T_out_source"] = T_out_source
+        warmtepompen[WP]["delta_T"] = T_in_source - T_out_source
+
+        return T_in_source - T_out_source
+
+    else:
+        selected_model = warmtepompen[WP]["selected_model"]
+        COP, P_compressor = bereken_variabele_COP_en_P(T_in_source, T_req_building, selected_model, WP)
+        warmtepompen[WP]["COP"] = COP
+        warmtepompen[WP]["P_compressor"] = P_compressor
+        Q_building = COP * P_compressor
+        warmtepompen[WP]["Q_building"] = Q_building
+        warmtepompen[WP]["percentage"] = Q_building/Q_req_building
+        delta_T = warmtepompen[WP]["delta_T"]
+        massadebiet = Q_building / (delta_T * Cp_fluid_backbone)
+        warmtepompen[WP]["m"] = massadebiet
+        warmtepompen[WP]["T_in_source"] = T_in
+        warmtepompen[WP]["T_out_source"] = T_in - delta_T
+
+        return delta_T
+
+def bereken_variabele_COP_en_P(T_in, T_out, model, WP):
+
+    for i in range(len(model)):
+        if model[i-1] == "_":
+            HP_model = model[0:i-1]
+            if model[i+2] == "l":
+                fit = "bilinear"
+            if model[i+2] == "q":
+                fit = "biquadratic"
+
+    data = HP_data[HP_model]["data"]
+    T_max = HP_data[HP_model]["T_max"]
+
+    if T_out > T_max:
+        T_out = T_max
+
+    warmtepompen[WP]["T_building"] = T_out
+
+    T_in_data = data[:, 0]
+    T_out_data = data[:, 1]
+    COP_data = data[:, 2]
+    P_data = data[:, 3]
+
+    if fit == "bilinear":
+
+        X = np.column_stack([
+            np.ones_like(T_in_data),
+            T_in_data,
+            T_out_data,
+            T_in_data * T_out_data
+        ])
+
+        params_COP, residuals, rank, s = lstsq(X, COP_data)
+        params_P, residuals, rank, s = lstsq(X, P_data)
+        A_COP, B_COP, C_COP, D_COP = params_COP
+        A_P, B_P, C_P, D_P = params_P
+
+        COP = A_COP + B_COP * T_in + C_COP * T_out + D_COP * T_in * T_out
+        P = A_P + B_P * T_in + C_P * T_out + D_P * T_in * T_out
+
+        return COP, P
+
+    if fit == "biquadratic":
+
+        X = np.column_stack([
+            np.ones_like(T_in_data),
+            T_in_data,
+            T_out_data,
+            T_in_data * T_out_data,
+            T_in_data**2,
+            T_out_data**2,
+            T_in_data**2 * T_out_data,
+            T_in_data * T_out_data**2,
+            T_in_data**2 * T_out_data**2
+        ])
+
+        params_COP, residuals, rank, s = lstsq(X, COP_data)
+        params_P, residuals, rank, s = lstsq(X, P_data)
+        A_COP, B_COP, C_COP, D_COP, E_COP, F_COP, G_COP, H_COP, I_COP = params_COP
+        A_P, B_P, C_P, D_P, E_P, F_P, G_P, H_P, I_P = params_P
+
+        COP = A_COP + B_COP*T_in + C_COP*T_out + D_COP*T_in*T_out + E_COP*T_in**2 + F_COP*T_out**2 + \
+            G_COP*T_in**2*T_out + H_COP*T_in*T_out**2 + I_COP*T_in**2*T_out**2
+        P = A_P + B_P*T_in + C_P*T_out + D_P*T_in*T_out + E_COP*T_in**2 + F_COP*T_out**2 + \
+            G_COP*T_in**2*T_out + H_COP*T_in*T_out**2 + I_COP*T_in**2*T_out**2
+
+        return COP, P
+
 def T_daling_leiding(begin_Temperatuur,lengte,massadebiet):
 
     if massadebiet == 0:
@@ -139,37 +185,43 @@ def T_daling_totaal(T_1):
 
     ##############################################################
 
+    # warmtepomp 10
+
+    T_I10 = T_1
+    T_I10_O10 = T_daling_warmtepomp("WP10", T_I10)
+    T_O10 = T_I10 - T_I10_O10
+
+    # warmtepomp 1
+
     T_1_2 = T_daling_leiding(T_1,L_1_2,m_1_2)
     T_2 = T_1 - T_1_2
-
-    # wartepomp 1
 
     T_2_3 = T_daling_leiding(T_2,L_2_3,m_2_3)
     T_3 = T_2 - T_2_3
 
-    T_3_I1 = T_daling_leiding(T_3,L_3_I1,m_WP_1)
+    T_3_I1 = T_daling_leiding(T_3,L_3_I1,m_WP1)
     T_I1 = T_3 - T_3_I1
 
-    T_I1_O1 = T_daling_warmtepomp(T_I1)
+    T_I1_O1 = T_daling_warmtepomp("WP1", T_I1)
     T_O1 = T_I1 - T_I1_O1
 
-    T_O1_14 = T_daling_leiding(T_O1,L_O1_14,m_WP_1)
+    T_O1_14 = T_daling_leiding(T_O1,L_O1_14,m_WP1)
     T_14_A = T_O1 - T_O1_14
 
     # warmtepomp 2
 
-    T_3_I2 = T_daling_leiding(T_3,L_3_I2,m_WP_2)
+    T_3_I2 = T_daling_leiding(T_3,L_3_I2,m_WP2)
     T_I2 = T_3 - T_3_I2
 
-    T_I2_O2 = T_daling_warmtepomp(T_I2)
+    T_I2_O2 = T_daling_warmtepomp("WP2", T_I2)
     T_O2 = T_I2 - T_I2_O2
 
-    T_O2_14 = T_daling_leiding(T_O2,L_O2_14,m_WP_2)
+    T_O2_14 = T_daling_leiding(T_O2,L_O2_14,m_WP2)
     T_14_B = T_O2 - T_O2_14
 
     # retour
 
-    T_14 = meng(T_14_A,m_WP_1,T_14_B,m_WP_2)
+    T_14 = meng(T_14_A,m_WP1,T_14_B,m_WP2)
 
     T_14_T_15 = T_daling_leiding(T_14,L_14_15,m_14_15)
     T_15_B = T_14 - T_14_T_15
@@ -179,13 +231,13 @@ def T_daling_totaal(T_1):
     T_2_4 = T_daling_leiding(T_2,L_2_4,m_2_4)
     T_4 = T_2 - T_2_4
 
-    T_4_I3 = T_daling_leiding(T_4,L_4_I3,m_WP_3)
+    T_4_I3 = T_daling_leiding(T_4,L_4_I3,m_WP3)
     T_I3 = T_4 - T_4_I3
 
-    T_I3_O3 = T_daling_warmtepomp(T_I3)
+    T_I3_O3 = T_daling_warmtepomp("WP3", T_I3)
     T_O3 = T_I3 - T_I3_O3
 
-    T_O3_13 = T_daling_leiding(T_O3,L_O3_13,m_WP_3)
+    T_O3_13 = T_daling_leiding(T_O3,L_O3_13,m_WP3)
     T_13_A = T_O3 - T_O3_13
 
     # warmtepomp 4
@@ -193,13 +245,13 @@ def T_daling_totaal(T_1):
     T_4_5 = T_daling_leiding(T_4, L_4_5, m_4_5)
     T_5 = T_4 - T_4_5
 
-    T_5_I4 = T_daling_leiding(T_5, L_5_I4, m_WP_4)
+    T_5_I4 = T_daling_leiding(T_5, L_5_I4, m_WP4)
     T_I4 = T_5 - T_5_I4
 
-    T_I4_O4 = T_daling_warmtepomp(T_I4)
+    T_I4_O4 = T_daling_warmtepomp("WP4", T_I4)
     T_O4 = T_I4 - T_I4_O4
 
-    T_O4_12 = T_daling_leiding(T_O4, L_O4_12, m_WP_4)
+    T_O4_12 = T_daling_leiding(T_O4, L_O4_12, m_WP4)
     T_12_A = T_O4 - T_O4_12
 
     # warmtepomp 5
@@ -207,27 +259,27 @@ def T_daling_totaal(T_1):
     T_5_6 = T_daling_leiding(T_5, L_5_6, m_5_6)
     T_6 = T_5 - T_5_6
 
-    T_6_I5 = T_daling_leiding(T_6, L_6_I5, m_WP_5)
+    T_6_I5 = T_daling_leiding(T_6, L_6_I5, m_WP5)
     T_I5 = T_6 - T_6_I5
 
-    T_I5_O5 = T_daling_warmtepomp(T_I5)
+    T_I5_O5 = T_daling_warmtepomp("WP5", T_I5)
     T_O5 = T_I5 - T_I5_O5
 
-    T_O5_11 = T_daling_leiding(T_O5, L_O5_11, m_WP_5)
+    T_O5_11 = T_daling_leiding(T_O5, L_O5_11, m_WP5)
     T_11_A = T_O5 - T_O5_11
 
     # warmtepomp 6
 
-    T_6_7 = T_daling_leiding(T_6, L_6_7, m_WP_6)
+    T_6_7 = T_daling_leiding(T_6, L_6_7, m_WP6)
     T_7 = T_6 - T_6_7
 
-    T_7_I6 = T_daling_leiding(T_7, L_7_I6, m_WP_6)
+    T_7_I6 = T_daling_leiding(T_7, L_7_I6, m_WP6)
     T_I6 = T_7 - T_7_I6
 
-    T_I6_O6 = T_daling_warmtepomp(T_I6)
+    T_I6_O6 = T_daling_warmtepomp("WP6", T_I6)
     T_O6 = T_I6 - T_I6_O6
 
-    T_O6_10 = T_daling_leiding(T_O6, L_O6_10, m_WP_6)
+    T_O6_10 = T_daling_leiding(T_O6, L_O6_10, m_WP6)
     T_10_A = T_O6 - T_O6_10
 
     # warmtepomp 7
@@ -235,61 +287,61 @@ def T_daling_totaal(T_1):
     T_7_8 = T_daling_leiding(T_7,L_7_8,m_7_8)
     T_8 = T_7 - T_7_8
 
-    T_8_I7 = T_daling_leiding(T_8, L_8_I7, m_WP_7)
+    T_8_I7 = T_daling_leiding(T_8, L_8_I7, m_WP7)
     T_I7 = T_8 - T_8_I7
 
-    T_I7_O7 = T_daling_warmtepomp(T_I7)
+    T_I7_O7 = T_daling_warmtepomp("WP7", T_I7)
     T_O7 = T_I7 - T_I7_O7
 
     # warmtepomp 8
 
-    T_8_I8 = T_daling_leiding(T_8, L_8_I8, m_WP_8)
+    T_8_I8 = T_daling_leiding(T_8, L_8_I8, m_WP8)
     T_I8 = T_8 - T_8_I8
 
-    T_I8_O8 = T_daling_warmtepomp(T_I8)
+    T_I8_O8 = T_daling_warmtepomp("WP8", T_I8)
     T_O8 = T_I8 - T_I8_O8
 
     # warmtepomp 9
 
-    T_8_I9 = T_daling_leiding(T_8, L_8_I9, m_WP_9)
+    T_8_I9 = T_daling_leiding(T_8, L_8_I9, m_WP9)
     T_I9 = T_8 - T_8_I9
 
-    T_I9_O9 = T_daling_warmtepomp(T_I9)
+    T_I9_O9 = T_daling_warmtepomp("WP9", T_I9)
     T_O9 = T_I9 - T_I9_O9
 
     # retour
 
-    T_O7_9 = T_daling_leiding(T_O7,L_O7_9,m_WP_7)
+    T_O7_9 = T_daling_leiding(T_O7,L_O7_9,m_WP7)
     T_9_A = T_O7_9
 
-    T_O8_9 = T_daling_leiding(T_O8, L_O8_9, m_WP_8)
+    T_O8_9 = T_daling_leiding(T_O8, L_O8_9, m_WP8)
     T_9_B = T_O8_9
 
-    T_O9_9 = T_daling_leiding(T_O9, L_O9_9, m_WP_9)
+    T_O9_9 = T_daling_leiding(T_O9, L_O9_9, m_WP9)
     T_9_C = T_O9_9
 
-    T_9_1 = meng(T_9_A,m_WP_7,T_9_B,m_WP_8)
-    T_9 = meng(T_9_1,(m_WP_7 + m_WP_8),T_9_C,m_WP_9)
+    T_9_1 = meng(T_9_A,m_WP7,T_9_B,m_WP8)
+    T_9 = meng(T_9_1,(m_WP7 + m_WP8),T_9_C,m_WP9)
 
     T_9_10 = T_daling_leiding(T_9,L_9_10,m_9_10)
     T_10_B = T_9 - T_9_10
 
-    T_10 = meng(T_10_A,m_WP_6,T_10_B,m_9_10)
+    T_10 = meng(T_10_A,m_WP6,T_10_B,m_9_10)
 
     T_10_11 = T_daling_leiding(T_10,L_10_11,m_10_11)
     T_11_B = T_10 - T_10_11
 
-    T_11 = meng(T_11_A,m_WP_5,T_11_B,m_WP_6)
+    T_11 = meng(T_11_A,m_WP5,T_11_B,m_WP6)
 
     T_11_12 = T_daling_leiding(T_11, L_11_12, m_11_12)
     T_12_B = T_11 - T_11_12
 
-    T_12 = meng(T_12_A,m_WP_4,T_12_B,m_11_12)
+    T_12 = meng(T_12_A,m_WP4,T_12_B,m_11_12)
 
     T_12_13 = T_daling_leiding(T_12,L_12_13,m_12_13)
     T_13_B = T_12 - T_12_13
 
-    T_13 = meng(T_13_A,m_WP_3,T_13_B,m_12_13)
+    T_13 = meng(T_13_A,m_WP3,T_13_B,m_12_13)
 
     T_13_15 = T_daling_leiding(T_13,L_13_15,m_13_15)
     T_15_A = T_13 - T_13_15
@@ -297,7 +349,11 @@ def T_daling_totaal(T_1):
     T_15 = meng(T_15_A,m_2_4,T_15_B,m_14_15)
 
     T_15_16 = T_daling_leiding(T_15,L_15_16,m_15_16)
-    T_16 = T_15 - T_15_16
+    T_16_A = T_15 - T_15_16
+
+    T_16_B = T_O10
+
+    T_16 = meng(T_16_A,m_15_16,T_16_B,m_WP10)
 
     ##############################################################
 
@@ -324,25 +380,27 @@ def T_daling_totaal(T_1):
     solution['T WP8 OUT'] = T_O8
     solution['T WP9 IN'] = T_I9
     solution['T WP9 OUT'] = T_O9
+    solution['T WP10 IN'] = T_I10
+    solution['T WP10 OUT'] = T_O10
     return T_1 - T_16
 
 def bereken_massadebieten_in_leidingen():
     global m_1_2
     global m_2_3
-    global m_WP_1
-    global m_WP_2
+    global m_WP1
+    global m_WP2
     global m_2_4
-    global m_WP_3
+    global m_WP3
     global m_4_5
-    global m_WP_4
+    global m_WP4
     global m_5_6
-    global m_WP_5
+    global m_WP5
     global m_6_7
-    global m_WP_6
+    global m_WP6
     global m_7_8
-    global m_WP_7
-    global m_WP_8
-    global m_WP_9
+    global m_WP7
+    global m_WP8
+    global m_WP9
     global m_9_10
     global m_10_11
     global m_11_12
@@ -350,25 +408,27 @@ def bereken_massadebieten_in_leidingen():
     global m_13_15
     global m_14_15
     global m_15_16
+    global m_WP10
 
     m_1_2 = m_dot_backbone
-    m_WP_1 = X_WP1 * m_dot_backbone
-    m_WP_2 = X_WP2 * m_dot_backbone
-    m_2_3 = m_WP_1 + m_WP_2
+    m_WP10 = X_WP10 * m_dot_backbone
+    m_WP1 = X_WP1 * m_dot_backbone
+    m_WP2 = X_WP2 * m_dot_backbone
+    m_2_3 = m_WP1 + m_WP2
     m_14_15 = m_2_3
 
     m_2_4 = m_dot_backbone - m_2_3
-    m_WP_3 = X_WP3 * m_dot_backbone
-    m_4_5 = m_2_4 - m_WP_3
-    m_WP_4 = X_WP4 * m_dot_backbone
-    m_5_6 = m_4_5 - m_WP_4
-    m_WP_5 = X_WP5 * m_dot_backbone
-    m_6_7 = m_5_6 - m_WP_5
-    m_WP_6 = X_WP6 * m_dot_backbone
-    m_WP_7 = X_WP7 * m_dot_backbone
-    m_WP_8 = X_WP8 * m_dot_backbone
-    m_WP_9 = X_WP9 * m_dot_backbone
-    m_7_8 = m_WP_7 + m_WP_8 + m_WP_9
+    m_WP3 = X_WP3 * m_dot_backbone
+    m_4_5 = m_2_4 - m_WP3
+    m_WP4 = X_WP4 * m_dot_backbone
+    m_5_6 = m_4_5 - m_WP4
+    m_WP5 = X_WP5 * m_dot_backbone
+    m_6_7 = m_5_6 - m_WP5
+    m_WP6 = X_WP6 * m_dot_backbone
+    m_WP7 = X_WP7 * m_dot_backbone
+    m_WP8 = X_WP8 * m_dot_backbone
+    m_WP9 = X_WP9 * m_dot_backbone
+    m_7_8 = m_WP7 + m_WP8 + m_WP9
     m_9_10 = m_7_8
     m_10_11 = m_6_7
     m_11_12 = m_5_6
@@ -623,66 +683,207 @@ def teken_schema(solution):
 ###### INPUT PARAMETERS/AANNAMES #################
 ##################################################
 
+modellen = ["Viessmann_bilinear", "Viessmann_biquadratic", "Daikin_bilinear", "Daikin_biquadratic"]
+
 ### VISUALISATIE INPUT
+progress_bar = st.progress(0)
+for i in range(101):
+    time.sleep(0.01)
+    progress_bar.progress(i)
 with st.expander("Gegevens invoeren"):
     col1, col2 = st.columns(2)
 
     with col1:
         T_imec = st.number_input("Temperatuur IMEC", value=21.8, step=0.1)
     with col2:
-        debiet_backbone = st.slider("Volumedebiet backbone [m^3/h]", 20, 80, value=70)
+        debiet_backbone = st.slider("Volumedebiet backbone [m^3/h]", 20, 100, value=70)
 
 
     col3, col4 = st.columns(2)
     with col3:
-        model_WP = st.selectbox("COP-model", ["fixed", "model2"])
-        WP7_8_9_checkbox = st.checkbox("Warmtepomp 7-8-9", value=True)
+        model_WP = st.selectbox("COP-model", ["vaste waarde", "variabel"])
+        #WP7_8_9_checkbox = st.checkbox("Warmtepomp 7-8-9", value=True)
+        WP7_8_9_checkbox = st.checkbox("Warmtepomp 7-8-9",value=True)
     with col4:
-        if model_WP == "fixed":
-            COP_fixed = st.number_input("Fixed Value:", min_value=1.0, max_value=10.0, value=4.0, step=0.1)
+        if model_WP == "vaste waarde":
+            model_WP = 'fixed'
+            COP_fixed = st.number_input("Vaste waarde COP:", min_value=1.0, max_value=10.0, value=4.0, step=0.1)
+    if model_WP == "variabel":
+        tab1, tab2 = st.tabs(["Warmtepompen 1-5", "Warmtepompen 6-10"])
+        with tab1:
+            col5, col6, col7, col8, col9 = st.columns(5)
+            with col5:
+                st.markdown("<h4 style='text-align: center;font-size:22px;'>WARMTEPOMP 1</h4>", unsafe_allow_html=True)
+                selected_model_WP1 = st.selectbox("Model", modellen, key ='modelWP1')
+                delta_T_WP1 = st.number_input("\u0394T bron", min_value=2.0, max_value=8.0, value=5.0, step=0.1,key ='deltaTWP1')
+            with col6:
+                st.markdown("<h4 style='text-align: center;font-size:22px;'>WARMTEPOMP 2</h4>", unsafe_allow_html=True)
+                selected_model_WP2 = st.selectbox("Model", modellen,key ='modelWP2')
+                delta_T_WP2 = st.number_input("\u0394T bron", min_value=2.0, max_value=8.0, value=5.0, step=0.1,key ='deltaTWP2')
+            with col7:
+                st.markdown("<h4 style='text-align: center;font-size:22px;'>WARMTEPOMP 3</h4>", unsafe_allow_html=True)
+                selected_model_WP3 = st.selectbox("Model", modellen,key ='modelWP3')
+                delta_T_WP3 = st.number_input("\u0394T bron", min_value=2.0, max_value=8.0, value=5.0, step=0.1,key ='deltaTWP3')
+            with col8:
+                st.markdown("<h4 style='text-align: center;font-size:22px;'>WARMTEPOMP 4</h4>", unsafe_allow_html=True)
+                selected_model_WP4 = st.selectbox("Model", modellen,key ='modelWP4')
+                delta_T_WP4 = st.number_input("\u0394T bron", min_value=2.0, max_value=8.0, value=5.0, step=0.1,key ='deltaTWP4')
+            with col9:
+                st.markdown("<h4 style='text-align: center;font-size:22px;'>WARMTEPOMP 5</h4>", unsafe_allow_html=True)
+                selected_model_WP5 = st.selectbox("Model", modellen,key ='modelWP5')
+                delta_T_WP5 = st.number_input("\u0394T bron", min_value=2.0, max_value=8.0, value=5.0, step=0.1,key ='deltaTWP5')
+        with tab2:
+            col10, col11, col12, col13, col14 = st.columns([1,1,1,1,1])
+            with col10:
+                st.markdown("<h4 style='text-align: center;font-size:22px;'>WARMTEPOMP 6</h4>", unsafe_allow_html=True)
+                selected_model_WP6 = st.selectbox("Model", modellen,key ='modelWP6')
+                delta_T_WP6 = st.number_input("\u0394T bron", min_value=2.0, max_value=8.0, value=5.0, step=0.1,key ='deltaTWP6')
+            with col11:
+                st.markdown("<h4 style='text-align: center;font-size:22px;'>WARMTEPOMP 7</h4>", unsafe_allow_html=True)
+                selected_model_WP7 = st.selectbox("Model", modellen,key ='modelWP7')
+                delta_T_WP7 = st.number_input("\u0394T bron", min_value=2.0, max_value=8.0, value=5.0, step=0.1,key ='deltaTWP7')
+            with col12:
+                st.markdown("<h4 style='text-align: center;font-size:22px;'>WARMTEPOMP 8</h4>", unsafe_allow_html=True)
+                selected_model_WP8 = st.selectbox("Model", modellen,key ='modelWP8')
+                delta_T_WP8 = st.number_input("\u0394T bron", min_value=2.0, max_value=8.0, value=5.0, step=0.1,key ='deltaTWP8')
+            with col13:
+                st.markdown("<h4 style='text-align: center;font-size:22px;'>WARMTEPOMP 9</h4>", unsafe_allow_html=True)
+                selected_model_WP9 = st.selectbox("Model", modellen,key ='modelWP9')
+                delta_T_WP9 = st.number_input("\u0394T bron", min_value=2.0, max_value=8.0, value=5.0, step=0.1,key ='deltaTWP9')
+            with col14:
+                st.markdown("<h4 style='text-align: center; font-size:22px;'>WARMTEPOMP 10</h4>", unsafe_allow_html=True)
+                selected_model_WP10 = st.selectbox("Model", modellen,key ='modelWP10')
+                delta_T_WP10 = st.number_input("\u0394T bron", min_value=2.0, max_value=8.0, value=5.0, step=0.1,key ='deltaTWP10')
+
+    else:
+        selected_model_WP1 = 'Not identified'
+        selected_model_WP2 = 'Not identified'
+        selected_model_WP3 = 'Not identified'
+        selected_model_WP4 = 'Not identified'
+        selected_model_WP5 = 'Not identified'
+        selected_model_WP6 = 'Not identified'
+        selected_model_WP7 = 'Not identified'
+        selected_model_WP8 = 'Not identified'
+        selected_model_WP9 = 'Not identified'
+        selected_model_WP10 = 'Not identified'
+
+        delta_T_WP1 = 0
+        delta_T_WP2 = 0
+        delta_T_WP3 = 0
+        delta_T_WP4 = 0
+        delta_T_WP5 = 0
+        delta_T_WP6 = 0
+        delta_T_WP7 = 0
+        delta_T_WP8 = 0
+        delta_T_WP9 = 0
+        delta_T_WP10 = 0
+
+
+
+
+warmtepompen['WP1']['model'] = selected_model_WP1
+warmtepompen['WP2']['model'] = selected_model_WP2
+warmtepompen['WP3']['model'] = selected_model_WP3
+warmtepompen['WP4']['model'] = selected_model_WP4
+warmtepompen['WP5']['model'] = selected_model_WP5
+warmtepompen['WP6']['model'] = selected_model_WP6
+warmtepompen['WP7']['model'] = selected_model_WP7
+warmtepompen['WP8']['model'] = selected_model_WP8
+warmtepompen['WP9']['model'] = selected_model_WP9
+warmtepompen['WP10']['model'] = selected_model_WP10
+
+warmtepompen['WP1']['selected_model'] = selected_model_WP1
+warmtepompen['WP2']['selected_model'] = selected_model_WP2
+warmtepompen['WP3']['selected_model'] = selected_model_WP3
+warmtepompen['WP4']['selected_model'] = selected_model_WP4
+warmtepompen['WP5']['selected_model'] = selected_model_WP5
+warmtepompen['WP6']['selected_model'] = selected_model_WP6
+warmtepompen['WP7']['selected_model'] = selected_model_WP7
+warmtepompen['WP8']['selected_model'] = selected_model_WP8
+warmtepompen['WP9']['selected_model'] = selected_model_WP9
+warmtepompen['WP10']['selected_model'] = selected_model_WP10
+
+warmtepompen['WP1']['delta_T'] = delta_T_WP1
+warmtepompen['WP2']['delta_T'] = delta_T_WP2
+warmtepompen['WP3']['delta_T'] = delta_T_WP3
+warmtepompen['WP4']['delta_T'] = delta_T_WP4
+warmtepompen['WP5']['delta_T'] = delta_T_WP5
+warmtepompen['WP6']['delta_T'] = delta_T_WP6
+warmtepompen['WP7']['delta_T'] = delta_T_WP7
+warmtepompen['WP8']['delta_T'] = delta_T_WP8
+warmtepompen['WP9']['delta_T'] = delta_T_WP9
+warmtepompen['WP10']['delta_T'] = delta_T_WP10
 
 ### WARMTEWISSELAAR
 type_WW = 'tegenstroom'
 A = 50  # m²
 U = 3000  # W/m²·K
 
+### DATA WARMTEPOMPEN
+
+HP_data["Viessmann"]["data"] = np.array([
+            [0, 35, 4.3, 13.2],
+            [45, 90, 3.2, 41.2],
+            [10, 35, 5.5, 15.4]])
+HP_data["Viessmann"]["T_max"] = 45
+
+HP_data["Daikin"]["data"] = np.array([
+            [0, 35, 4.3, 13.2],
+            [45, 90, 3.2, 41.2],
+            [10, 35, 5.5, 15.4]])
+HP_data["Daikin"]["T_max"] = 45
 
 ### WARMTEPOMPEN
-max_heat_demand_WP_1 = 250000  # W
-percentage_WP_1 = 0.70
-T_hot_out_WP_1 = 50 #°C
 
-max_heat_demand_WP_2 = 200000  # W
-percentage_WP_2 = 0.70
-T_hot_out_WP_2 = 40 #°C
+# WP1
+T_req_building_WP1 = 50  # °C
+Q_req_building_WP1 = 250000  # W
+percentage_WP1 = 0.70
 
-max_heat_demand_WP_3 = 200000  # W
-percentage_WP_3 = 0.70
-T_hot_out_WP_3 = 40 #°C
+# WP2
+T_req_building_WP2 = 50  # °C
+Q_req_building_WP2 = 250000  # W
+percentage_WP2 = 0.70
 
-max_heat_demand_WP_4 = 200000  # W
-percentage_WP_4 = 0.70
-T_hot_out_WP_4 = 40 #°C
+# WP3
+T_req_building_WP3 = 50  # °C
+Q_req_building_WP3 = 250000  # W
+percentage_WP3 = 0.70
 
-max_heat_demand_WP_5 = 200000  # W
-percentage_WP_5 = 0.70
-T_hot_out_WP_5 = 40 #°C
+# WP4
+T_req_building_WP4 = 50  # °C
+Q_req_building_WP4 = 250000  # W
+percentage_WP4 = 0.70
 
-max_heat_demand_WP_6 = 200000  # W
-percentage_WP_6 = 0.70
-T_hot_out_WP_6 = 40 #°C
+# WP5
+T_req_building_WP5 = 50  # °C
+Q_req_building_WP5 = 250000  # W
+percentage_WP5 = 0.70
 
-max_heat_demand_WP_7 = 200000  # W
-percentage_WP_7 = 0.70
-T_hot_out_WP_7 = 40 #°C
+# WP6
+T_req_building_WP6 = 50  # °C
+Q_req_building_WP6 = 250000  # W
+percentage_WP6 = 0.70
 
-max_heat_demand_WP_8 = 200000  # W
-percentage_WP_8 = 0.70
-T_hot_out_WP_8 = 40 #°C
+# WP7
+T_req_building_WP7 = 50  # °C
+Q_req_building_WP7 = 250000  # W
+percentage_WP7 = 0.70
 
-max_heat_demand_WP_9 = 200000  # W
-percentage_WP_9 = 0.70
-T_hot_out_WP_9 = 40 #°C
+# WP8
+T_req_building_WP8 = 50  # °C
+Q_req_building_WP8 = 250000  # W
+percentage_WP8 = 0.70
+
+# WP9
+T_req_building_WP9 = 50  # °C
+Q_req_building_WP9 = 250000  # W
+percentage_WP9 = 0.70
+
+# WP10
+T_req_building_WP10 = 50  # °C
+Q_req_building_WP10 = 250000  # W
+percentage_WP10 = 0.70
 
 ### FLUIDS
 debiet_imec = 60 #m3/h
@@ -743,7 +944,7 @@ L_9_10 = L_7_8  # m
 ### WARMTEPOMPEN DEBIETEN
 
 if WP7_8_9_checkbox:
-    X_WP1 = 0.2
+    X_WP1 = 0.1
     X_WP2 = 0.1
     X_WP3 = 0.1
     X_WP4 = 0.1
@@ -752,18 +953,20 @@ if WP7_8_9_checkbox:
     X_WP7 = 0.1
     X_WP8 = 0.1
     X_WP9 = 0.1
+    X_WP10 = 0.1
 else:
     X_WP1 = 0.2
     X_WP2 = 0.2
     X_WP3 = 0.2
-    X_WP4 = 0.2
+    X_WP4 = 0.1
     X_WP5 = 0.1
     X_WP6 = 0.1
     X_WP7 = 0.0
     X_WP8 = 0.0
     X_WP9 = 0.0
+    X_WP10 = 0.1
 
-if round(X_WP1 + X_WP2 + X_WP3 + X_WP4 + X_WP5 + X_WP6 + X_WP7 + X_WP8 + X_WP9,1) == 1:
+if round(X_WP1 + X_WP2 + X_WP3 + X_WP4 + X_WP5 + X_WP6 + X_WP7 + X_WP8 + X_WP9 + X_WP10,1) == 1:
     bereken_massadebieten_in_leidingen()
 else:
     print("Massafracties door warmtepompen zijn samen niet gelijk aan 1")
@@ -773,6 +976,19 @@ else:
 initial_guess_T_WW_in = 7
 iteratie_error_marge = 0.01
 aantal_cijfers_na_komma = 2
+
+###################################
+##### warmtepompen dictionary #####
+###################################
+
+parameters = ["selected_model","delta_T","m","T_in_source","T_out_source","T_building","T_req_building","Q_building","Q_req_building", "percentage", "P_compressor"]
+for i in range(1, 11):
+    WP = "WP"+str(i)
+    print(WP)
+    for j in range(len(parameters)):
+        name_var = parameters[j] + "_" + WP
+        value = globals().get(name_var)
+        warmtepompen[WP][parameters[j]] = value
 
 ####################################
 ###### START SCRIPT ################
