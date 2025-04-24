@@ -866,15 +866,15 @@ U = 3000  # W/m²·K
 ### DATA WARMTEPOMPEN
 
 HP_data["Viessmann"]["data"] = np.array([
-            [0, 35, 4.3, 13.2],
-            [45, 90, 3.2, 41.2],
-            [10, 35, 5.5, 15.4]])
+            [0, 35, 4.3, 13200],
+            [45, 90, 3.2, 41200],
+            [10, 35, 5.5, 15400]])
 HP_data["Viessmann"]["T_max"] = 45
 
 HP_data["Daikin"]["data"] = np.array([
-            [0, 35, 4.3, 13.2],
-            [45, 90, 3.2, 41.2],
-            [10, 35, 5.5, 15.4]])
+            [0, 35, 4.3, 13200],
+            [45, 90, 3.2, 41200],
+            [10, 35, 5.5, 15400]])
 HP_data["Daikin"]["T_max"] = 45
 
 ### WARMTEPOMPEN
@@ -1138,6 +1138,10 @@ data = {
         str(warmtepompen['WP1']['m']), str(warmtepompen['WP2']['m']), str(warmtepompen['WP3']['m']),
         str(warmtepompen['WP4']['m']), str(warmtepompen['WP5']['m']), str(warmtepompen['WP6']['m'])
     ],
+    'COP' : [
+        str(warmtepompen['WP1']['COP']), str(warmtepompen['WP2']['COP']), str(warmtepompen['WP3']['COP']),
+        str(warmtepompen['WP4']['COP']), str(warmtepompen['WP5']['COP']), str(warmtepompen['WP6']['COP'])
+    ],
     '\u0394T bron [°C]' : [
         str(warmtepompen['WP1']['delta_T']), str(warmtepompen['WP2']['delta_T']), str(warmtepompen['WP3']['delta_T']),
         str(warmtepompen['WP4']['delta_T']), str(warmtepompen['WP5']['delta_T']), str(warmtepompen['WP6']['delta_T'])
@@ -1166,8 +1170,10 @@ if WP7_8_9_checkbox:
         ],
         '\u0394T bron [°C]' : [
         str(warmtepompen['WP7']['delta_T']), str(warmtepompen['WP8']['delta_T']), str(warmtepompen['WP9']['delta_T'])
+        ],
+        'COP': [
+            str(warmtepompen['WP7']['COP']), str(warmtepompen['WP8']['COP']), str(warmtepompen['WP9']['COP'])
         ]
-
     }
     if model_WP == 'variabel':
         wp789_data['Model'] = [
@@ -1190,6 +1196,9 @@ wp10_data = {
     ],
     '\u0394T bron [°C]' : [
         str(warmtepompen['WP10']['delta_T'])
+    ],
+    'COP' : [
+        str(warmtepompen['WP10']['COP'])
     ]
 
 }
@@ -1202,6 +1211,7 @@ df = pd.concat([df, wp10_df], ignore_index=True)
 desired_order = ['T WP in (bron) [°C]', 'T WP out (bron) [°C]']
 if '\u0394T bron [°C]' in df.columns:
     desired_order.append('\u0394T bron [°C]')
+desired_order.append('COP')
 desired_order.append('debiet [m^3/h]')
 if 'Model' in df.columns:
     desired_order.append('Model')
@@ -1364,7 +1374,7 @@ fig.update_layout(
     barmode="stack",  # Stapelen van staven
     title="Warmtelevering per gebouw",
     xaxis_title="Warmtepomp",
-    yaxis_title="Warmte [kWh]",
+    yaxis_title="Warmte [Wh]",
     legend_title="Bron van warmte"
 )
 
